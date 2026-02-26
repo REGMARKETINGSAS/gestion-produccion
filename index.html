@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso al Sistema - REG Marketing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --blue: #1565C0;
+            --blue-dark: #0D47A1;
+            --blue-mid: #1976D2;
+            --blue-light: #42A5F5;
+            --white: #ffffff;
+            --gray: #f4f6f9;
+            --text: #263238;
+            --text-light: #607D8B;
+            --success: #2E7D32;
+            --success-light: #43A047;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 50%, var(--blue-mid) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-y: auto;
+            background-attachment: fixed;
+        }
+
+        /* Fondo decorativo */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        .circles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .circles span {
+            position: absolute;
+            display: block;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            animation: float linear infinite;
+        }
+
+        .circles span:nth-child(1)  { width:80px;  height:80px;  left:10%; animation-duration:20s; animation-delay:0s; }
+        .circles span:nth-child(2)  { width:30px;  height:30px;  left:25%; animation-duration:14s; animation-delay:2s; }
+        .circles span:nth-child(3)  { width:50px;  height:50px;  left:70%; animation-duration:18s; animation-delay:4s; }
+        .circles span:nth-child(4)  { width:120px; height:120px; left:85%; animation-duration:25s; animation-delay:0s; }
+        .circles span:nth-child(5)  { width:20px;  height:20px;  left:50%; animation-duration:12s; animation-delay:6s; }
+
+        @keyframes float {
+            0%   { transform: translateY(110vh) rotate(0deg);   opacity:0; }
+            10%  { opacity: 1; }
+            90%  { opacity: 1; }
+            100% { transform: translateY(-10vh) rotate(720deg); opacity:0; }
+        }
+
+        /* CARD PRINCIPAL */
+        .login-card {
+            background: var(--white);
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            animation: cardIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* HEADER DE LA CARD */
+        .card-header {
+            background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+            padding: 40px 40px 35px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 0; right: 0;
+            height: 30px;
+            background: var(--white);
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        }
+
+        .logo-container {
+            width: 90px;
+            height: 90px;
+            background: rgba(255,255,255,0.92);
+            border: 3px solid rgba(255,255,255,0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-container img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+
+        .logo-container i {
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .card-header h1 {
+            color: white;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .card-header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        /* BODY DE LA CARD */
+        .card-body {
+            padding: 10px 40px 40px;
+        }
+
+        .section-title {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        /* BOTÓN TRABAJADOR */
+        .btn-worker {
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, var(--success), var(--success-light));
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(46,125,50,0.35);
+            margin-bottom: 12px;
+            text-decoration: none;
+        }
+
+        .btn-worker:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(46,125,50,0.45);
+            background: linear-gradient(135deg, var(--success-light), var(--success));
+        }
+
+        .btn-worker:active {
+            transform: translateY(0);
+        }
+
+        .btn-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .btn-text {
+            text-align: left;
+            flex: 1;
+        }
+
+        .btn-text span {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        /* DIVISOR */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #E0E0E0;
+        }
+
+        .divider span {
+            color: var(--text-light);
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* SECCIÓN JEFE */
+        .jefe-section {
+            background: #F8FAFC;
+            border-radius: 16px;
+            padding: 24px;
+            border: 2px solid #E8F0FE;
+        }
+
+        .jefe-section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            color: var(--blue);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .jefe-section-title i {
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 1rem;
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 13px 44px 13px 42px;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: var(--text);
+            background: white;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+        }
+
+        .input-group input:focus + i,
+        .input-group:focus-within i {
+            color: var(--blue);
+        }
+
+        .toggle-pass {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 1rem;
+            padding: 4px;
+            transition: color 0.3s;
+        }
+
+        .toggle-pass:hover { color: var(--blue); }
+
+        /* La i del icono va después del input en el DOM para el :focus-within */
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 1rem;
+            pointer-events: none;
+            transition: color 0.3s;
+            z-index: 1;
+        }
+
+        .input-wrapper:focus-within .input-icon {
+            color: var(--blue);
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 13px 44px 13px 42px;
+            border: 2px solid #E0E0E0;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: var(--text);
+            background: white;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+        }
+
+        .btn-jefe {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(13,71,161,0.35);
+        }
+
+        .btn-jefe:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(13,71,161,0.45);
+        }
+
+        .btn-jefe:active { transform: translateY(0); }
+
+        /* ERROR */
+        .error-msg {
+            display: none;
+            background: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #FFCDD2;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 14px;
+            animation: shake 0.4s ease;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-msg.show {
+            display: flex;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%       { transform: translateX(-8px); }
+            40%       { transform: translateX(8px); }
+            60%       { transform: translateX(-5px); }
+            80%       { transform: translateX(5px); }
+        }
+
+        /* SUCCESS */
+        .success-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(13,71,161,0.92);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .success-overlay.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .success-icon {
+            width: 90px;
+            height: 90px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            animation: popIn 0.4s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to   { transform: scale(1); }
+        }
+
+        .success-overlay p {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        /* FOOTER */
+        .card-footer {
+            text-align: center;
+            padding: 16px 40px 24px;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            border-top: 1px solid #F0F0F0;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 520px) {
+            .card-header { padding: 30px 24px 28px; }
+            .card-body   { padding: 8px 24px 30px; }
+            .card-footer { padding: 16px 24px 20px; }
+        }
+
+        input::-ms-reveal,
+        input::-ms-clear {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="circles">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- OVERLAY ÉXITO -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-icon"><i class="fas fa-check"></i></div>
+        <p id="successMsg">Acceso concedido</p>
+    </div>
+
+    <div class="login-card">
+        <!-- HEADER -->
+        <div class="card-header">
+            <div class="logo-container">
+                <img src="logo.png" alt="REG Marketing" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <i class="fas fa-industry" style="display:none;"></i>
+            </div>
+            <h1>REG MARKETING S.A.S</h1>
+            <p>Sistema de Gestión de Producción</p>
+        </div>
+
+        <!-- BODY -->
+        <div class="card-body">
+            <p class="section-title">¿Cómo deseas ingresar?</p>
+
+            <!-- TRABAJADOR -->
+            <button class="btn-worker" onclick="entrarComoTrabajador()">
+                <div class="btn-icon">
+                    <i class="fas fa-hard-hat"></i>
+                </div>
+                <div class="btn-text">
+                    Soy Trabajador
+                    <span>Acceso a las áreas de producción</span>
+                </div>
+                <i class="fas fa-arrow-right" style="margin-left:auto; opacity:0.7;"></i>
+            </button>
+
+            <div class="divider">
+                <span>o inicia sesión como administrador</span>
+            </div>
+
+            <!-- JEFE -->
+            <div class="jefe-section">
+                <div class="jefe-section-title">
+                    <i class="fas fa-user-shield"></i>
+                    Acceso Administrador
+                </div>
+
+                <div class="error-msg" id="errorMsg">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText">Clave incorrecta. Inténtalo de nuevo.</span>
+                </div>
+
+                <div class="input-wrapper" style="margin-bottom:14px;">
+                    <i class="input-icon fas fa-lock"></i>
+                    <input
+                        type="password"
+                        id="claveJefe"
+                        placeholder="Contraseña de administrador"
+                        onkeydown="if(event.key==='Enter') verificarClave()"
+                        autocomplete="new-password"
+                    >
+                    <button class="toggle-pass" onclick="togglePass()" tabindex="-1" type="button">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+
+                <button class="btn-jefe" onclick="verificarClave()">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Ingresar como Jefe
+                </button>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="card-footer">
+            <i class="fas fa-shield-alt"></i> REG Marketing S.A.S — Sistema Interno de Producción
+        </div>
+    </div>
+
+    <script>
+    
+
+        function entrarComoTrabajador() {
+            sessionStorage.setItem('trabajadorAutenticado', 'true');
+            sessionStorage.removeItem('jefeAutenticado');
+            mostrarExito('Bienvenido', 'tablet-areas.html');
+        }
+
+        async function verificarClave() {
+            const clave = document.getElementById('claveJefe').value;
+            if (!clave) { mostrarError('Por favor ingresa la contraseña.'); return; }
+
+            const valido = await window.DB.verificarLogin(clave);
+            if (valido) {
+                sessionStorage.setItem('jefeAutenticado', 'true');
+                mostrarExito('Bienvenido, Jefe', 'inicio.html');
+            } else {
+                mostrarError('Clave incorrecta. Inténtalo de nuevo.');
+                document.getElementById('claveJefe').value = '';
+            }
+        }
+
+        function mostrarError(texto) {
+            const errorMsg = document.getElementById('errorMsg');
+            document.getElementById('errorText').textContent = texto;
+            errorMsg.classList.remove('show');
+            void errorMsg.offsetWidth; // reset animación
+            errorMsg.classList.add('show');
+        }
+
+        function mostrarExito(msg, destino) {
+            document.getElementById('successMsg').textContent = msg;
+            document.getElementById('successOverlay').classList.add('show');
+            setTimeout(() => { window.location.href = destino; }, 1000);
+        }
+
+        function togglePass() {
+            const input = document.getElementById('claveJefe');
+            const icon  = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+    </script>
+</body>
+</html>

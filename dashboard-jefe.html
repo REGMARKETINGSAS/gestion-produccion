@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Jefe - REG Marketing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="database.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { min-height:100vh; font-family:'Outfit',sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #0D47A1 0%, #1565C0 45%, #1976D2 100%);
+            display:flex; flex-direction:column; align-items:center;
+            padding: 24px 16px 120px;
+            position:relative; overflow-x:hidden;
+        }
+
+        .bg-circles { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+        .bg-circles span {
+            position:absolute; border-radius:50%;
+            background:rgba(255,255,255,0.04);
+            animation:floatUp linear infinite;
+        }
+        .bg-circles span:nth-child(1){ width:80px;  height:80px;  left:7%;  animation-duration:20s; animation-delay:0s; }
+        .bg-circles span:nth-child(2){ width:30px;  height:30px;  left:20%; animation-duration:14s; animation-delay:3s; }
+        .bg-circles span:nth-child(3){ width:55px;  height:55px;  left:63%; animation-duration:18s; animation-delay:6s; }
+        .bg-circles span:nth-child(4){ width:120px; height:120px; left:80%; animation-duration:25s; animation-delay:1s; }
+        .bg-circles span:nth-child(5){ width:22px;  height:22px;  left:45%; animation-duration:12s; animation-delay:8s; }
+        .bg-circles span:nth-child(6){ width:65px;  height:65px;  left:33%; animation-duration:21s; animation-delay:4s; }
+
+        @keyframes floatUp {
+            0%   { transform:translateY(110vh) rotate(0deg);   opacity:0; }
+            8%   { opacity:1; } 92% { opacity:1; }
+            100% { transform:translateY(-10vh) rotate(540deg); opacity:0; }
+        }
+
+        .wrapper {
+            position:relative; z-index:1; width:100%; max-width:1200px;
+            animation: pageIn 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes pageIn {
+            from { opacity:0; transform:translateY(24px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Header */
+        .page-header { text-align:center; margin-bottom:28px; }
+        .logo-wrap {
+            width:82px; height:82px;
+            background:rgba(255,255,255,0.92);
+            border:3px solid rgba(255,255,255,0.95);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 14px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.2);
+        }
+        .logo-wrap img { width:52px; height:52px; object-fit:contain; }
+        .logo-wrap i   { font-size:2rem; color:#1565C0; display:none; }
+        .page-header h1 {
+            font-size:2rem; font-weight:800; color:white;
+            letter-spacing:2px; text-shadow:0 2px 12px rgba(0,0,0,0.25); margin-bottom:4px;
+        }
+        .page-header .sub { font-size:0.88rem; color:rgba(255,255,255,0.75); }
+
+        /* KPIs */
+        .kpi-stats {
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:16px; margin-bottom:24px;
+        }
+        .kpi-box {
+            background:rgba(255,255,255,0.12);
+            backdrop-filter:blur(10px);
+            border:1.5px solid rgba(255,255,255,0.2);
+            border-radius:18px; padding:20px;
+            text-align:center; transition:all 0.3s ease;
+            border-top: 4px solid;
+        }
+        .kpi-box:hover { background:rgba(255,255,255,0.18); transform:translateY(-3px); }
+        .kpi-box.blue   { border-top-color:#42A5F5; }
+        .kpi-box.orange { border-top-color:#FFA726; }
+        .kpi-box.green  { border-top-color:#66BB6A; }
+        .kpi-box.purple { border-top-color:#CE93D8; }
+        .kpi-value {
+            font-size:2.6rem; font-weight:800; color:white;
+            text-shadow:0 2px 8px rgba(0,0,0,0.2); line-height:1; margin:6px 0;
+        }
+        .kpi-label { font-size:0.78rem; color:rgba(255,255,255,0.75); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+
+        /* Título sección */
+        .section-title-dashboard {
+            color:white; font-size:1.3rem; font-weight:800;
+            margin:0 0 16px 0; display:flex; align-items:center; gap:10px;
+        }
+
+        /* Cards de órdenes */
+        .orden-card {
+            background:white; border-radius:18px; padding:22px;
+            margin-bottom:16px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.12);
+            transition:all 0.3s ease;
+            border-left:5px solid #1565C0;
+            animation: orderIn 0.4s ease both;
+        }
+        @keyframes orderIn { from{opacity:0;transform:translateX(-14px);}to{opacity:1;transform:translateX(0);} }
+        .orden-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.18); }
+
+        .orden-numero { font-size:1.5rem; font-weight:800; color:#1565C0; }
+        .orden-cliente { font-size:1rem; font-weight:700; color:#1A2332; margin-top:2px; }
+
+        .orden-header {
+            display:flex; justify-content:space-between; align-items:flex-start;
+            margin-bottom:14px; padding-bottom:14px; border-bottom:2px solid #EEF2F7;
+            gap:16px;
+        }
+
+        /* Imagen preview */
+        .orden-imagen-preview {
+            width:80px; height:80px; object-fit:cover;
+            border-radius:12px; border:3px solid #1565C0;
+            box-shadow:0 4px 12px rgba(0,0,0,0.18);
+            cursor:pointer; transition:all 0.3s ease; flex-shrink:0;
+        }
+        .orden-imagen-preview:hover { transform:scale(1.06); }
+
+        /* Info chips */
+        .orden-info {
+            display:flex; gap:8px; flex-wrap:wrap;
+            font-size:0.82rem; margin-bottom:14px;
+        }
+        .orden-info-item {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:4px 10px; border-radius:20px;
+            background:#EEF2F7; color:#607D8B; font-weight:600;
+        }
+
+        /* Proceso grid */
+        .proceso-grid {
+            display:flex; flex-wrap:wrap; gap:10px; margin-top:14px;
+        }
+        .proceso-item {
+            flex:1; min-width:100px;
+            text-align:center; padding:12px 8px;
+            border-radius:12px; transition:all 0.3s ease;
+            border:2px solid;
+        }
+        .proceso-item.pendiente  { background:#FFF5F5; border-color:#FFCDD2; }
+        .proceso-item.en-proceso { background:#FFF8E1; border-color:#FFE082; }
+        .proceso-item.completado { background:#F1FFF3; border-color:#A5D6A7; }
+
+        .proceso-icon { font-size:1.3rem; margin-bottom:6px; }
+        .proceso-item.pendiente  .proceso-icon { color:#E53935; }
+        .proceso-item.en-proceso .proceso-icon { color:#F57C00; }
+        .proceso-item.completado .proceso-icon { color:#2E7D32; }
+
+        .proceso-nombre  { font-size:0.78rem; font-weight:700; color:#1A2332; }
+        .proceso-estado  { font-size:0.7rem;  color:#607D8B; margin-top:3px; }
+
+        /* Botones acciones orden */
+        .btn-accion {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:8px 14px; border:none; border-radius:9px;
+            font-family:'Outfit',sans-serif; font-size:0.82rem; font-weight:600;
+            cursor:pointer; transition:all 0.25s ease;
+        }
+        .btn-accion.ver      { background:linear-gradient(135deg,#0D47A1,#1976D2); color:white; }
+        .btn-accion.editar   { background:linear-gradient(135deg,#1B5E20,#2E7D32); color:white; }
+        .btn-accion.eliminar { background:linear-gradient(135deg,#B71C1C,#E53935); color:white; }
+        .btn-accion.completar{ background:linear-gradient(135deg,#1B5E20,#43A047); color:white; box-shadow:0 4px 14px rgba(27,94,32,0.35); }
+        .btn-accion:hover { transform:translateY(-2px); filter:brightness(1.08); }
+
+        /* Footer nav */
+        .footer-nav {
+            position:fixed; bottom:0; left:0; right:0;
+            background:white; padding:14px 20px;
+            box-shadow:0 -4px 20px rgba(0,0,0,0.15); z-index:1000;
+        }
+        .footer-nav-inner {
+            max-width:1200px; margin:0 auto;
+            display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+        }
+        .btn-nav {
+            display:inline-flex; align-items:center; gap:7px;
+            padding:10px 18px; border:none; border-radius:10px;
+            font-family:'Outfit',sans-serif; font-size:0.88rem; font-weight:600;
+            cursor:pointer; transition:all 0.25s ease; text-decoration:none;
+        }
+        .btn-nav.primary   { background:linear-gradient(135deg,#0D47A1,#1976D2); color:white; }
+        .btn-nav.success   { background:linear-gradient(135deg,#1B5E20,#2E7D32); color:white; }
+        .btn-nav.purple    { background:linear-gradient(135deg,#4A148C,#7B1FA2); color:white; }
+        .btn-nav.secondary { background:#607D8B; color:white; }
+        .btn-nav.danger    { background:linear-gradient(135deg,#B71C1C,#E53935); color:white; }
+        .btn-nav:hover { transform:translateY(-2px); filter:brightness(1.08); }
+
+        /* Auto-refresh */
+        .auto-refresh {
+            position:fixed; top:16px; right:16px;
+            background:white; padding:8px 14px; border-radius:20px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.18);
+            font-size:0.8rem; font-weight:600; color:#2E7D32;
+            display:flex; align-items:center; gap:6px;
+            animation:pulse 2s infinite; z-index:1000;
+            font-family:'Outfit',sans-serif;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.65;} }
+
+        /* Empty state */
+        .empty-state {
+            text-align:center; padding:60px 30px;
+            background:white; border-radius:18px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.1);
+        }
+        .empty-state i { font-size:4rem; color:#CBD5E0; margin-bottom:16px; display:block; }
+        .empty-state h3 { color:#1A2332; margin-bottom:8px; }
+        .empty-state p  { color:#607D8B; }
+
+        /* Notificaciones */
+        .notification {
+            position:fixed; top:20px; right:20px; padding:14px 22px;
+            border-radius:12px; color:white; font-weight:600;
+            font-family:'Outfit',sans-serif;
+            box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999999;
+            animation:slideIn 0.3s ease; max-width:340px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .notification.success { background:linear-gradient(135deg,#2E7D32,#43A047); }
+        .notification.error   { background:linear-gradient(135deg,#B71C1C,#E53935); }
+        .notification.info    { background:linear-gradient(135deg,#0D47A1,#1976D2); }
+        @keyframes slideIn  { from{transform:translateX(110%);opacity:0;} to{transform:translateX(0);opacity:1;} }
+        @keyframes slideOut { from{transform:translateX(0);opacity:1;} to{transform:translateX(110%);opacity:0;} }
+
+        @media (max-width:768px) {
+            .kpi-stats { grid-template-columns:repeat(2,1fr); }
+            .proceso-grid { gap:8px; }
+            .proceso-item { min-width:80px; }
+        }
+
+        /* PAQUETES */
+        .paquete-grupo {
+            margin-bottom: 24px;
+        }
+        .paquete-header {
+            background: linear-gradient(135deg, #880E4F, #AD1457);
+            border-radius: 14px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: border-radius 0.3s ease;
+        }
+        .paquete-header.abierto {
+            border-radius: 14px 14px 0 0;
+        }
+        .paquete-header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+        .paquete-id {
+            font-size: 1rem;
+            font-weight: 800;
+            color: white;
+        }
+        .paquete-cliente {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+        }
+        .paquete-badge {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .paquete-grupo .orden-card {
+            border-radius: 0;
+            margin-bottom: 0;
+            border-left-color: #AD1457;
+            border-top: 1px solid #F8BBD9;
+        }
+        .paquete-grupo .orden-card:last-child {
+            border-radius: 0 0 14px 14px;
+        }
+        @media (max-width: 600px) {
+            .page-header h1 { font-size: 1.5rem; }
+
+            .kpi-stats { grid-template-columns: repeat(2,1fr); gap: 10px; }
+            .kpi-value { font-size: 2rem; }
+
+            .orden-card { padding: 16px; }
+
+            .orden-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .orden-header > div:first-child {
+                width: 100%;
+            }
+            .orden-header > div:last-child {
+                width: 100%;
+                align-items: flex-start !important;
+            }
+            .orden-header > div:last-child > div {
+                justify-content: flex-start !important;
+            }
+
+            .proceso-grid { gap: 6px; }
+            .proceso-item {
+                min-width: 70px;
+                padding: 8px 4px;
+                flex: 1 1 calc(33% - 6px);
+            }
+            .proceso-icon { font-size: 1rem; }
+            .proceso-nombre { font-size: 0.7rem; }
+            .proceso-estado { font-size: 0.62rem; }
+
+            .footer-nav { padding: 10px 12px; }
+            .footer-nav-inner { gap: 6px; }
+            .btn-nav {
+                padding: 8px 10px;
+                font-size: 0.78rem;
+                gap: 5px;
+            }
+
+            .paquete-header { padding: 10px 14px; }
+            .paquete-id { font-size: 0.9rem; }
+            .paquete-badge { font-size: 0.72rem; padding: 3px 8px; }
+        }
+
+        @media (max-width: 400px) {
+            .btn-nav span { display: none; }
+            .btn-nav { padding: 9px 11px; }
+            .kpi-stats { grid-template-columns: repeat(2,1fr); gap: 8px; }
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="bg-circles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="wrapper">
+
+        <div class="page-header">
+            <div class="logo-wrap">
+                <img src="logo.png" alt="REG" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                <i class="fas fa-industry"></i>
+            </div>
+            <h1>REG MARKETING</h1>
+            <p class="sub">Dashboard de Producción en Tiempo Real</p>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-stats">
+            <div class="kpi-box blue">
+                <div class="kpi-label">Órdenes Activas</div>
+                <div class="kpi-value" id="totalOrdenes">0</div>
+            </div>
+            <div class="kpi-box orange">
+                <div class="kpi-label">En Proceso</div>
+                <div class="kpi-value" id="enProceso">0</div>
+            </div>
+            <div class="kpi-box green">
+                <div class="kpi-label">Completadas</div>
+                <div class="kpi-value" id="completadas">0</div>
+            </div>
+            <div class="kpi-box purple">
+                <div class="kpi-label">Pendientes</div>
+                <div class="kpi-value" id="pendientes">0</div>
+            </div>
+        </div>
+
+        <h2 class="section-title-dashboard">
+            <i class="fas fa-clipboard-list"></i> Órdenes de Producción
+        </h2>
+
+        <div id="listaOrdenes"></div>
+
+    </div>
+
+    <!-- Footer nav -->
+    <div class="footer-nav">
+        <div class="footer-nav-inner">
+            <a href="crear-orden.html" class="btn-nav primary">
+                <i class="fas fa-plus-circle"></i> Nueva Orden
+            </a>
+            <button class="btn-nav" style="background:linear-gradient(135deg,#AD1457,#E91E63);color:white;" onclick="abrirModalPaquete()">
+                <i class="fas fa-layer-group"></i> Nuevo Paquete
+            </button>
+            <a href="tablet-areas.html" class="btn-nav success">
+                <i class="fas fa-tablet-alt"></i> Tablets
+            </a>
+            <button class="btn-nav purple" onclick="verHistorial()">
+                <i class="fas fa-history"></i> Historial
+            </button>
+            <a href="inicio.html" class="btn-nav secondary">
+                <i class="fas fa-home"></i> Inicio
+            </a>
+            <button class="btn-nav danger" onclick="cerrarSesion()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </div>
+    </div>
+
+    <div class="auto-refresh">
+        <i class="fas fa-sync-alt fa-spin"></i> En tiempo real
+    </div>
+
+    <script>
+
+        if (sessionStorage.getItem('jefeAutenticado') !== 'true') {
+            window.location.href = 'index.html';
+        }
+        async function cargarOrdenes() {
+            let ordenes = await window.DB.obtenerOrdenes();
+            if (!ordenes || ordenes.length === 0) {
+                ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            } else {
+                localStorage.setItem('ordenes', JSON.stringify(ordenes));
+            }
+            const listaOrdenes = document.getElementById('listaOrdenes');
+
+            if (ordenes.length === 0) {
+                listaOrdenes.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>No hay órdenes de producción</h3>
+                        <p>Crea la primera orden desde el formulario</p>
+                        <a href="crear-orden.html" class="btn btn-primary" style="margin-top: 20px; text-decoration: none;">
+                            <i class="fas fa-plus"></i> Crear Primera Orden
+                        </a>
+                    </div>`;
+                actualizarEstadisticas(0, 0, 0, 0);
+                return;
+            }
+
+            let totalOrdenes = ordenes.length;
+            let enProceso = 0, completadas = 0, pendientes = 0;
+
+            ordenes.forEach(orden => {
+                const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k]);
+                const estadosRequeridos = areasRequeridas.map(a => orden.estado[a] || 'pendiente');
+                const todasCompletadas = areasRequeridas.length > 0 && estadosRequeridos.every(e => e === 'completado');
+                const algunaEnProceso = estadosRequeridos.some(e => e === 'en-proceso');
+                const todasPendientes = estadosRequeridos.every(e => e === 'pendiente');
+                if (todasCompletadas) completadas++;
+                else if (algunaEnProceso) enProceso++;
+                else pendientes++;
+            });
+
+            actualizarEstadisticas(totalOrdenes, enProceso, completadas, pendientes);
+
+            ordenes.sort((a, b) => {
+                const dA = new Date(a.fechaEntrega + 'T12:00:00');
+                const dB = new Date(b.fechaEntrega + 'T12:00:00');
+                return dA - dB;
+            });
+
+            // Separar órdenes con paquete y sin paquete
+            const conPaquete = ordenes.filter(o => o.paqueteId);
+            const sinPaquete = ordenes.filter(o => !o.paqueteId);
+
+            // Agrupar por paqueteId
+            const paquetes = {};
+            conPaquete.forEach(o => {
+                if (!paquetes[o.paqueteId]) paquetes[o.paqueteId] = [];
+                paquetes[o.paqueteId].push(o);
+            });
+
+            let html = '';
+
+            // Renderizar paquetes primero
+            Object.entries(paquetes).forEach(([paqueteId, ordenesPaquete]) => {
+                const totalPrendas = ordenesPaquete.reduce((sum, o) => {
+                    return sum + (o.cantidadTotal || Object.values(o.tallas || {}).reduce((s, v) => s + v, 0));
+                }, 0);
+                const cliente = ordenesPaquete[0].cliente;
+                const fechaEntrega = ordenesPaquete[0].fechaEntrega;
+
+                const fechaObj = new Date(fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
+                const hoy2 = new Date(); hoy2.setHours(0,0,0,0);
+                const dias2 = Math.ceil((fechaObj - hoy2) / 86400000);
+                const textoFecha2 = dias2 < 0 ? `${Math.abs(dias2)}d vencida` : dias2 === 0 ? 'Hoy' : `${dias2}d restantes`;
+                const colorFecha2 = dias2 < 0 ? '#C62828' : dias2 === 0 ? '#FF6D00' : dias2 <= 2 ? '#F57C00' : '#607D8B';
+
+                const resumenPrendas = ordenesPaquete.map(o => o.tipoPrenda).join(' · ');
+                const pkgUid = paqueteId.replace(/[^a-zA-Z0-9]/g, '');
+
+                html += `
+                <div class="paquete-grupo" id="grupo-${pkgUid}">
+                    <div class="paquete-header" style="cursor:pointer;" onclick="togglePaquete('${pkgUid}')">
+                        <div class="paquete-header-info">
+                            <i class="fas fa-layer-group" style="font-size:1.3rem;"></i>
+                            <div>
+                                <div class="paquete-id">${paqueteId}${ordenesPaquete[0].arte ? ` — ${ordenesPaquete[0].arte}` : ''}</div>
+                                <div class="paquete-cliente">${cliente}</div>
+                                <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);margin-top:2px;">${resumenPrendas}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="paquete-badge">${ordenesPaquete.length} prendas · ${totalPrendas} uds</span>
+                            <span style="font-size:0.78rem;font-weight:700;
+                                background:rgba(255,255,255,0.92);
+                                color:${dias2 < 0 ? '#C62828' : dias2 === 0 ? '#FF6D00' : dias2 <= 2 ? '#F57C00' : '#37474F'};
+                                padding:3px 10px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.5);">
+                                ${textoFecha2}
+                            </span>
+                            <i class="fas fa-chevron-down" id="chevron-${pkgUid}"
+                                style="color:white;font-size:0.9rem;transition:transform 0.3s;"></i>
+                        </div>
+                    </div>
+                    ${(() => {
+                        const todasListas = ordenesPaquete.every(o => {
+                            const areas = Object.keys(o.requerimientos || {}).filter(k => o.requerimientos[k]);
+                            return areas.length > 0 && areas.every(a => o.estado[a] === 'completado');
+                        });
+                        return todasListas ? `
+                        <div style="background:rgba(0,0,0,0.15);padding:10px 20px;
+                            display:flex;justify-content:flex-end;">
+                            <button onclick="event.stopPropagation();completarPaquete('${paqueteId}')"
+                                style="padding:8px 18px;border:none;border-radius:10px;cursor:pointer;
+                                background:linear-gradient(135deg,#1B5E20,#43A047);color:white;
+                                font-weight:700;font-size:0.85rem;font-family:'Outfit',sans-serif;
+                                box-shadow:0 4px 14px rgba(27,94,32,0.4);
+                                display:inline-flex;align-items:center;gap:7px;">
+                                <i class="fas fa-check-double"></i> Mover paquete al historial
+                            </button>
+                        </div>` : '';
+                    })()}
+                    <div id="contenido-${pkgUid}" style="max-height:0;overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1);">
+                        ${ordenesPaquete.map(orden => renderOrdenCard(orden)).join('')}
+                    </div>
+                </div>`;
+            });
+
+            // Renderizar órdenes normales
+            html += sinPaquete.map(orden => renderOrdenCard(orden)).join('');
+
+            listaOrdenes.innerHTML = html;
+        }
+
+        function renderOrdenCard(orden) {
+            const totalPrendas = orden.cantidadTotal || Object.values(orden.tallas || {}).reduce((sum, val) => sum + val, 0);
+
+            const fechaObj = new Date(orden.fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const dias = Math.ceil((fechaObj - hoy) / 86400000);
+            const colorFecha = dias < 0 ? 'white' : dias === 0 ? 'white' : dias <= 2 ? '#F57C00' : '#607D8B';
+            const bgFecha = dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#FFF8E1' : '#EEF2F7';
+            const borderFecha = dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#FFE082' : '#E0E0E0';
+            const iconoFecha = dias < 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias === 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias <= 2 ? '<i class="fas fa-clock"></i>' : '';
+            const textoFecha = dias < 0 ? `${Math.abs(dias)}d vencida` : dias === 0 ? 'Hoy' : `${dias}d restantes`;
+
+            const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k]);
+            const todasCompletadas = areasRequeridas.length > 0 && areasRequeridas.every(a => orden.estado[a] === 'completado');
+            const colorBorde = orden.paqueteId ? '#AD1457' : (dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#F57C00' : '#1565C0');
+
+            return `
+                <div class="orden-card" style="border-left-color:${colorBorde};">
+                    <div class="orden-header">
+                        <div style="display:flex;gap:14px;align-items:flex-start;">
+                            ${orden.imagenDiseno
+                                ? `<img src="${orden.imagenDiseno}" class="orden-imagen-preview"
+                                    onclick="ampliarImagen('${orden.imagenDiseno.replace(/'/g, "\\'")}')" alt="Diseño">`
+                                : `<div style="width:80px;height:80px;border-radius:12px;background:#F0F4F8;
+                                    display:flex;align-items:center;justify-content:center;
+                                    border:2px solid #E8EDF2;flex-shrink:0;">
+                                    <i class="fas fa-tshirt" style="font-size:2rem;color:#CBD5E0;"></i>
+                                </div>`
+                            }
+                            <div>
+                                <div class="orden-numero">${orden.numeroOrden}</div>
+                                <div class="orden-cliente">${orden.cliente}</div>
+                                <div style="font-size:0.82rem;color:#607D8B;margin-top:2px;">${orden.tipoPrenda}</div>
+                                ${orden.paqueteId ? `<span style="font-size:0.75rem;padding:3px 8px;border-radius:20px;background:#FCE4EC;color:#AD1457;font-weight:700;display:inline-block;margin-top:4px;"><i class="fas fa-layer-group"></i> ${orden.paqueteId}</span>` : ''}
+                            </div>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
+                                    border-radius:20px;font-size:0.78rem;font-weight:600;
+                                    background:${bgFecha};color:${colorFecha};border:1.5px solid ${borderFecha};">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    ${iconoFecha} ${new Date(orden.fechaEntrega + 'T12:00:00').toLocaleDateString('es-ES')} · ${textoFecha}
+                                </span>
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
+                                    border-radius:20px;font-size:0.78rem;font-weight:600;
+                                    background:#EEF2F7;color:#1565C0;">
+                                    <i class="fas fa-boxes"></i> ${totalPrendas} prendas
+                                </span>
+                            </div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                                <button class="btn-accion ver" onclick="event.stopPropagation();verOrdenCompleta('${orden.numeroOrden}')">
+                                    <i class="fas fa-eye"></i> Ver
+                                </button>
+                                <button class="btn-accion editar" onclick="event.stopPropagation();editarOrden('${orden.numeroOrden}')">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn-accion eliminar" onclick="event.stopPropagation();eliminarOrden('${orden.numeroOrden}')">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                                ${todasCompletadas ? `
+                                    <button class="btn-accion completar" onclick="event.stopPropagation();completarOrdenJefe('${orden.numeroOrden}')">
+                                        <i class="fas fa-check-double"></i> Mover al Historial
+                                    </button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orden-info">
+                        ${orden.tipoPrenda ? `<span class="orden-info-item"><i class="fas fa-tag"></i> ${orden.tipoPrenda}</span>` : ''}
+                        ${orden.tela ? `<span class="orden-info-item"><i class="fas fa-scroll"></i> ${orden.tela}</span>` : ''}
+                        ${orden.cuello ? `<span class="orden-info-item"><i class="fas fa-circle-notch"></i> ${orden.cuello}</span>` : ''}
+                    </div>
+
+                    <div class="proceso-grid">
+                        ${orden.requerimientos?.corte      ? generarProceso('Corte',       'cut',           orden.estado.corte)      : ''}
+                        ${orden.requerimientos?.confeccion ? generarProceso('Confección',  'tshirt',        orden.estado.confeccion) : ''}
+                        ${orden.requerimientos?.impresion  ? generarProceso('Impresión',   'print',         orden.estado.impresion)  : ''}
+                        ${orden.requerimientos?.sublimacion? generarProceso('Sublimación', 'fill-drip',     orden.estado.sublimacion): ''}
+                        ${orden.requerimientos?.estampado  ? generarProceso('Estampado',   'stamp',         orden.estado.estampado)  : ''}
+                        ${orden.requerimientos?.dtf        ? generarProceso('DTF',         'layer-group',   orden.estado.dtf)        : ''}
+                        ${orden.requerimientos?.corteLaser ? generarProceso('Corte Láser', 'crosshairs',    orden.estado.corteLaser) : ''}
+                        ${orden.requerimientos?.despacho   ? generarProceso('Despacho',    'shipping-fast', orden.estado.despacho)   : ''}
+                    </div>
+                </div>`;
+        }
+
+        function generarProceso(nombre, icon, estado) {
+            const estadosTexto = {
+                'pendiente': 'Pendiente',
+                'en-proceso': 'En Proceso',
+                'completado': 'Completado'
+            };
+
+            return `
+                <div class="proceso-item ${estado}">
+                    <div class="proceso-icon">
+                        <i class="fas fa-${icon}"></i>
+                    </div>
+                    <div class="proceso-nombre">${nombre}</div>
+                    <div class="proceso-estado">${estadosTexto[estado]}</div>
+                </div>
+            `;
+        }
+
+        function actualizarEstadisticas(total, proceso, completas, pend) {
+            document.getElementById('totalOrdenes').textContent = total;
+            document.getElementById('enProceso').textContent = proceso;
+            document.getElementById('completadas').textContent = completas;
+            document.getElementById('pendientes').textContent = pend;
+        }
+
+        // Cargar al inicio
+        cargarOrdenes();
+
+        setInterval(async () => {
+            let nuevasOrdenes = await window.DB.obtenerOrdenes();
+            if (!nuevasOrdenes || nuevasOrdenes.length === 0) return;
+            const anterior = localStorage.getItem('ordenes');
+            const nuevo = JSON.stringify(nuevasOrdenes);
+            if (anterior !== nuevo) {
+                localStorage.setItem('ordenes', JSON.stringify(nuevasOrdenes));
+                cargarOrdenes();
+            }
+        }, 8000);
+
+        // Notificación inicial
+        setTimeout(() => {
+            const notif = document.createElement('div');
+            notif.className = 'notification info';
+            notif.innerHTML = '<i class="fas fa-info-circle"></i> Dashboard en tiempo real activado';
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }, 500);
+        function verOrdenCompleta(numeroOrden) {
+            window.location.href = `ver-orden.html?orden=${numeroOrden}`;
+        }
+        // ===== SISTEMA DE LOGIN =====
+        const CLAVE_JEFE = 'jefe2025'; // Cambiar aquí la clave
+
+        if (sessionStorage.getItem('jefeAutenticado') !== 'true') {
+    window.location.href = 'index.html';
+}
+
+        // Permitir Enter para login
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginInput = document.getElementById('loginPassword');
+            if (loginInput) {
+                loginInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        verificarLogin();
+                    }
+                });
+            }
+            
+            // Verificar si ya está autenticado
+            const autenticado = localStorage.getItem('jefeAutenticado');
+            if (autenticado === 'true') {
+                document.getElementById('loginOverlay').style.display = 'none';
+            }
+        });
+        async function completarOrdenJefe(numeroOrden) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+                background:rgba(0,0,0,0.8);display:flex;align-items:center;
+                justify-content:center;z-index:99999;`;
+
+            modal.innerHTML = `
+                <div style="background:white;padding:40px;border-radius:20px;max-width:500px;
+                    text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                    <i class="fas fa-check-double" style="font-size:4rem;color:#2E7D32;margin-bottom:20px;"></i>
+                    <h2 style="color:#1A2332;margin-bottom:12px;">¿Mover al historial?</h2>
+                    <p style="color:#607D8B;font-size:1rem;margin-bottom:28px;">
+                        Todas las áreas están completadas. Esta orden se moverá al historial y saldrá del dashboard.
+                    </p>
+                    <div style="display:flex;gap:12px;justify-content:center;">
+                        <button id="btnCancelarJefe" style="padding:12px 28px;border:none;border-radius:10px;
+                            background:#EEF2F7;color:#607D8B;font-weight:600;cursor:pointer;font-size:0.95rem;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button id="btnConfirmarJefe" style="padding:12px 28px;border:none;border-radius:10px;
+                            background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;
+                            font-weight:700;cursor:pointer;font-size:0.95rem;
+                            box-shadow:0 4px 14px rgba(27,94,32,0.35);">
+                            <i class="fas fa-check"></i> Sí, Mover
+                        </button>
+                    </div>
+                </div>`;
+
+            document.body.appendChild(modal);
+
+            const respuesta = await new Promise(resolve => {
+                document.getElementById('btnCancelarJefe').onclick = () => { modal.remove(); resolve(false); };
+                document.getElementById('btnConfirmarJefe').onclick = () => { modal.remove(); resolve(true); };
+                modal.onclick = e => { if (e.target === modal) { modal.remove(); resolve(false); } };
+            });
+
+            if (!respuesta) return;
+
+            let ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const orden = ordenes.find(o => o.numeroOrden === numeroOrden);
+            if (!orden) return;
+
+            await window.DB.moverAHistorial(orden);
+
+            ordenes = ordenes.filter(o => o.numeroOrden !== numeroOrden);
+            localStorage.setItem('ordenes', JSON.stringify(ordenes));
+
+            let historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+            historial.push({ ...orden, fechaCompletado: new Date().toISOString() });
+            localStorage.setItem('historialOrdenes', JSON.stringify(historial));
+
+            mostrarNotificacion(`🎉 Orden ${numeroOrden} movida al historial`, 'success');
+            cargarOrdenes();
+        }
+        // Botón de cerrar sesión (opcional)
+        function cerrarSesion() {
+            sessionStorage.removeItem('jefeAutenticado');
+            window.location.href = 'index.html';
+        }
+        
+        async function verHistorial() {
+            let historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+
+            // Abrir modal inmediatamente con localStorage
+            // Supabase sincroniza en segundo plano
+            window.DB.obtenerHistorial().then(data => {
+                if (data && data.length > 0) {
+                    const nuevo = data.map(item => ({
+                        ...item.datos_completos,
+                        fechaCompletado: item.fecha_completado
+                    }));
+                    localStorage.setItem('historialOrdenes', JSON.stringify(nuevo));
+                }
+            }).catch(() => {});
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+                background:rgba(13,71,161,0.75);backdrop-filter:blur(6px);
+                display:flex;align-items:center;justify-content:center;
+                z-index:99999;padding:20px;`;
+
+            if (historial.length === 0) {
+                overlay.innerHTML = `
+                    <div style="background:white;border-radius:22px;padding:50px 40px;
+                        max-width:480px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+                        font-family:'Outfit',sans-serif;">
+                        <div style="width:80px;height:80px;border-radius:50%;background:#EEF2F7;
+                            display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                            <i class="fas fa-inbox" style="font-size:2.2rem;color:#CBD5E0;"></i>
+                        </div>
+                        <h2 style="color:#1A2332;font-size:1.4rem;font-weight:800;margin-bottom:10px;">Historial Vacío</h2>
+                        <p style="color:#607D8B;margin-bottom:28px;">No hay órdenes completadas aún.</p>
+                        <button id="btnCerrarVacio" style="padding:12px 32px;border:none;border-radius:12px;
+                            background:linear-gradient(135deg,#0D47A1,#1976D2);color:white;
+                            font-weight:700;font-size:0.95rem;cursor:pointer;font-family:'Outfit',sans-serif;">
+                            Entendido
+                        </button>
+                    </div>`;
+                document.body.appendChild(overlay);
+                document.getElementById('btnCerrarVacio').onclick = () => overlay.remove();
+                overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+                return;
+            }
+
+            let itemsHTML = historial.map((orden, i) => {
+                const total = orden.cantidadTotal || Object.values(orden.tallas || {}).reduce((sum, val) => sum + val, 0);
+                const fecha = new Date(orden.fechaCompletado || orden.fechaCreacion);
+                return `
+                    <div style="background:#F8FAFF;border:1.5px solid #E8EDF2;border-radius:14px;
+                        padding:16px 20px;display:flex;align-items:center;gap:16px;
+                        transition:all 0.2s;" onmouseover="this.style.borderColor='#1565C0'"
+                        onmouseout="this.style.borderColor='#E8EDF2'">
+                        ${orden.imagenDiseno
+                            ? `<img src="${orden.imagenDiseno}" style="width:60px;height:60px;object-fit:cover;
+                                border-radius:10px;border:2px solid #1565C0;flex-shrink:0;">`
+                            : `<div style="width:60px;height:60px;border-radius:10px;background:#EEF2F7;
+                                display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="fas fa-tshirt" style="font-size:1.5rem;color:#CBD5E0;"></i>
+                            </div>`
+                        }
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:1.1rem;font-weight:800;color:#1565C0;">${orden.numeroOrden}</div>
+                            <div style="font-size:0.9rem;font-weight:600;color:#1A2332;margin-top:2px;">${orden.cliente}</div>
+                            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                                <span style="font-size:0.75rem;padding:3px 8px;border-radius:20px;
+                                    background:#EEF2F7;color:#607D8B;font-weight:600;">
+                                    <i class="fas fa-tshirt"></i> ${orden.tipoPrenda}
+                                </span>
+                                <span style="font-size:0.75rem;padding:3px 8px;border-radius:20px;
+                                    background:#E8F5E9;color:#2E7D32;font-weight:600;">
+                                    <i class="fas fa-boxes"></i> ${total} uds
+                                </span>
+                                <span style="font-size:0.75rem;padding:3px 8px;border-radius:20px;
+                                    background:#EEF2F7;color:#607D8B;font-weight:600;">
+                                    <i class="fas fa-calendar-check"></i> ${fecha.toLocaleDateString('es-ES')}
+                                </span>
+                            </div>
+                        </div>
+                        <button onclick="window.open('ver-orden.html?orden=${orden.numeroOrden}&origen=historial','_blank')"
+                            style="padding:9px 16px;border:none;border-radius:10px;cursor:pointer;
+                            background:linear-gradient(135deg,#0D47A1,#1976D2);color:white;
+                            font-weight:600;font-size:0.82rem;flex-shrink:0;font-family:'Outfit',sans-serif;
+                            display:inline-flex;align-items:center;gap:6px;">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+                    </div>`;
+            }).join('');
+
+            overlay.innerHTML = `
+                <div style="background:white;border-radius:22px;width:100%;max-width:780px;
+                    max-height:88vh;overflow:hidden;display:flex;flex-direction:column;
+                    box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:'Outfit',sans-serif;">
+
+                    <!-- Header -->
+                    <div style="padding:22px 28px 18px;border-bottom:2px solid #EEF2F7;
+                        display:flex;justify-content:space-between;align-items:center;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:40px;height:40px;border-radius:10px;
+                                background:linear-gradient(135deg,#0D47A1,#1976D2);
+                                display:flex;align-items:center;justify-content:center;">
+                                <i class="fas fa-history" style="color:white;font-size:1rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:1.2rem;font-weight:800;color:#1A2332;">Historial de Producción</div>
+                                <div style="font-size:0.78rem;color:#607D8B;">${historial.length} órdenes completadas</div>
+                            </div>
+                        </div>
+                        <button id="btnCerrarHistorial" style="width:36px;height:36px;border:none;border-radius:50%;
+                            background:#EEF2F7;color:#607D8B;cursor:pointer;font-size:1rem;
+                            display:flex;align-items:center;justify-content:center;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div style="padding:14px 28px;border-bottom:1.5px solid #EEF2F7;display:flex;gap:10px;">
+                        <button id="btnPDF" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;
+                            background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;
+                            font-weight:600;font-size:0.85rem;font-family:'Outfit',sans-serif;
+                            display:inline-flex;align-items:center;gap:7px;">
+                            <i class="fas fa-file-pdf"></i> Generar Reporte PDF
+                        </button>
+                        <button id="btnLimpiar" style="padding:9px 18px;border:none;border-radius:10px;cursor:pointer;
+                            background:#FFF5F5;color:#C62828;border:1.5px solid #FFCDD2;
+                            font-weight:600;font-size:0.85rem;font-family:'Outfit',sans-serif;
+                            display:inline-flex;align-items:center;gap:7px;">
+                            <i class="fas fa-trash-alt"></i> Limpiar Historial
+                        </button>
+                    </div>
+
+                    <!-- Lista -->
+                    <div style="padding:20px 28px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+                        ${itemsHTML}
+                    </div>
+                </div>`;
+
+            document.body.appendChild(overlay);
+
+            document.getElementById('btnCerrarHistorial').onclick = () => overlay.remove();
+            overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+            document.getElementById('btnPDF').addEventListener('click', () => {
+                try { generarReporteMensualPDF(historial); } catch(e) { alert('Error PDF: ' + e.message); }
+            }, { once: true });
+
+            document.getElementById('btnLimpiar').onclick = async () => {
+                const confirmar = await mostrarModalConfirmacion(
+                    '¿Limpiar historial?',
+                    'Se eliminarán TODAS las órdenes completadas. No se puede deshacer.',
+                    'Cancelar', 'Sí, Limpiar'
+                );
+                if (!confirmar) return;
+                try {
+                    await window.DB.limpiarHistorial();
+                    localStorage.removeItem('historialOrdenes');
+                    overlay.remove();
+                    mostrarNotificacion('Historial limpiado', 'success');
+                } catch(e) {
+                    mostrarNotificacion('Error al limpiar', 'error');
+                }
+            };
+        }
+
+        // Función para ver detalles de orden del historial
+        function verOrdenCompletaHistorial(orden) {
+            console.log('Ver orden del historial:', orden);
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 999999;
+                overflow: auto;
+                padding: 20px;
+            `;
+            
+            let tallasHTML = '';
+            for (let [talla, cantidad] of Object.entries(orden.tallas || {})) {
+                if (cantidad > 0) {
+                    tallasHTML += `<span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 5px; margin: 5px;">${talla}: ${cantidad}</span>`;
+                }
+            }
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 20px; max-width: 800px; width: 100%;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h2 style="color: #28a745; margin-bottom: 10px;">
+                            <i class="fas fa-check-circle"></i> ORDEN COMPLETADA
+                        </h2>
+                        <h3 style="color: #333;">${orden.numeroOrden}</h3>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h4 style="color: #666; margin-bottom: 15px;"><i class="fas fa-info-circle"></i> Información General</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div><strong>Cliente:</strong> ${orden.cliente}</div>
+                            <div><strong>Tipo de Prenda:</strong> ${orden.tipoPrenda}</div>
+                            <div><strong>Tipo de Cuello:</strong> ${orden.tipoCuello || 'N/A'}</div>
+                            <div><strong>Marquilla:</strong> ${orden.marquilla || 'N/A'}</div>
+                            <div><strong>Total Unidades:</strong> ${orden.total}</div>
+                            <div><strong>Fecha Completado:</strong> ${new Date(orden.fechaCompletado || orden.fechaCreacion).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h4 style="color: #666; margin-bottom: 15px;"><i class="fas fa-ruler"></i> Tallas</h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            ${tallasHTML}
+                        </div>
+                    </div>
+                    
+                    ${orden.disenoUrl ? `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                        <h4 style="color: #666; margin-bottom: 15px;"><i class="fas fa-image"></i> Diseño</h4>
+                        <img src="${orden.disenoUrl}" style="max-width: 100%; max-height: 400px; border-radius: 10px;" />
+                    </div>
+                    ` : ''}
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button id="cerrarDetalleHistorial" class="btn btn-secondary" style="padding: 12px 30px;">
+                            <i class="fas fa-times"></i> Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            document.getElementById('cerrarDetalleHistorial').onclick = () => {
+                modal.remove();
+            };
+            
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+        }
+
+        function exportarHistorial() {
+            const historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+            
+            if (historial.length === 0) {
+                // Modal bonito cuando no hay historial
+                const modalVacio = document.createElement('div');
+                modalVacio.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 999999;
+                `;
+                
+                modalVacio.innerHTML = `
+                    <div style="background: white; padding: 40px; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <i class="fas fa-inbox" style="font-size: 5rem; color: #95a5a6; margin-bottom: 20px;"></i>
+                        <h2 style="color: #2c3e50; margin-bottom: 15px;">Historial Vacío</h2>
+                        <p style="color: #7f8c8d; font-size: 1.1rem; margin-bottom: 30px;">
+                            No hay órdenes completadas en el historial aún.
+                        </p>
+                        <button id="cerrarModalVacio" class="btn btn-primary" style="padding: 12px 30px;">
+                            <i class="fas fa-check"></i> Entendido
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modalVacio);
+                
+                document.getElementById('cerrarModalVacio').onclick = () => {
+                    modalVacio.remove();
+                };
+                
+                // Cerrar al hacer clic fuera
+                modalVacio.onclick = (e) => {
+                    if (e.target === modalVacio) {
+                        modalVacio.remove();
+                    }
+                };
+                
+                return;
+            }
+            
+            const csv = [
+                ['Número Orden', 'Cliente', 'Fecha Completado', 'Total Prendas', 'Tipo Prenda'].join(','),
+                ...historial.map(orden => {
+                    const total = Object.values(orden.tallas).reduce((sum, val) => sum + val, 0);
+                    const fecha = new Date(orden.fechaCompletado).toLocaleDateString('es-ES');
+                    return [
+                        orden.numeroOrden,
+                        orden.cliente,
+                        fecha,
+                        total,
+                        orden.tipoPrenda
+                    ].join(',');
+                })
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `historial_ordenes_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            
+
+            mostrarNotificacion('✅ Historial exportado', 'success');
+        }
+
+        function ampliarImagen(imagenSrc) {
+        const modal = document.createElement('div');
+        modal.id = 'modalImagenAmpliada';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            cursor: zoom-out;
+        `;
+        
+        const contenedor = document.createElement('div');
+        contenedor.style.cssText = 'position: relative;';
+        
+        const img = document.createElement('img');
+        img.src = imagenSrc;
+        img.style.cssText = 'max-width: 90vw; max-height: 90vh; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);';
+        
+        const btnCerrar = document.createElement('button');
+        btnCerrar.textContent = '✕';
+        btnCerrar.style.cssText = `
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background: #f44336;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.8rem;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.5);
+            transition: all 0.3s ease;
+        `;
+        
+        btnCerrar.onmouseover = () => { btnCerrar.style.transform = 'scale(1.1)'; };
+        btnCerrar.onmouseout = () => { btnCerrar.style.transform = 'scale(1)'; };
+        
+        btnCerrar.addEventListener('click', function(e) {
+            e.stopPropagation();
+            modal.remove();
+        });
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        contenedor.appendChild(img);
+        contenedor.appendChild(btnCerrar);
+        modal.appendChild(contenedor);
+        document.body.appendChild(modal);
+    }
+
+    function mostrarNotificacion(mensaje, tipo) {
+        const notif = document.createElement('div');
+        notif.className = `notification ${tipo}`;
+        notif.textContent = mensaje;
+        document.body.appendChild(notif);
+        
+        setTimeout(() => {
+            notif.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notif.remove(), 300);
+        }, 3000);
+    }
+    async function limpiarHistorial() {
+        if (!confirm('⚠️ ¿Estás SEGURO de eliminar TODO el historial?\n\nEsta acción NO se puede deshacer.')) {
+            return;
+        }
+        
+        if (!confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\nSe eliminarán TODAS las órdenes completadas.\n¿Continuar?')) {
+            return;
+        }
+        
+        try {
+            // Limpiar localStorage
+            localStorage.removeItem('historialOrdenes');
+            
+            mostrarNotificacion('🗑️ Historial limpiado correctamente', 'success');
+            
+            // Cerrar modal
+            document.querySelector('.modal-overlay')?.remove();
+            
+        } catch (error) {
+            console.error('Error al limpiar historial:', error);
+            mostrarNotificacion('❌ Error al limpiar historial', 'error');
+        }
+    }
+    async function eliminarOrden(numeroOrden) {
+        // Modal bonito
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; padding: 40px; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <i class="fas fa-trash-alt" style="font-size: 4rem; color: #f44336; margin-bottom: 20px;"></i>
+                <h2 style="color: #333; margin-bottom: 15px;">¿Eliminar la orden ${numeroOrden}?</h2>
+                <p style="color: #666; font-size: 1.1rem; margin-bottom: 30px;">
+                    Esta acción <strong>NO se puede deshacer</strong>
+                </p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="btnCancelar" style="padding:12px 28px;border:none;border-radius:12px;
+                        background:#EEF2F7;color:#607D8B;font-weight:600;cursor:pointer;
+                        font-size:0.95rem;font-family:'Outfit',sans-serif;
+                        display:inline-flex;align-items:center;gap:7px;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button id="btnEliminar" style="padding:12px 28px;border:none;border-radius:12px;
+                        background:linear-gradient(135deg,#B71C1C,#E53935);color:white;
+                        font-weight:700;cursor:pointer;font-size:0.95rem;font-family:'Outfit',sans-serif;
+                        box-shadow:0 4px 14px rgba(183,28,28,0.35);
+                        display:inline-flex;align-items:center;gap:7px;">
+                        <i class="fas fa-trash"></i> Sí, Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        const respuesta = await new Promise(resolve => {
+            document.getElementById('btnCancelar').onclick = () => {
+                modal.remove();
+                resolve(false);
+            };
+            document.getElementById('btnEliminar').onclick = () => {
+                modal.remove();
+                resolve(true);
+            };
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(false);
+                }
+            };
+        });
+        
+        if (!respuesta) return;
+        
+        try {
+            // Eliminar de Supabase
+            const resultado = await window.DB.eliminarOrden(numeroOrden);
+            
+            if (resultado.success) {
+                // También eliminar de localStorage
+                let ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                ordenes = ordenes.filter(o => o.numeroOrden !== numeroOrden);
+                localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                
+                mostrarNotificacion(`🗑️ Orden ${numeroOrden} eliminada`, 'success');
+                cargarOrdenes();
+            } else {
+                throw new Error(resultado.error);
+            }
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            mostrarNotificacion('❌ Error al eliminar orden', 'error');
+        }
+    }
+    function editarOrden(numeroOrden) {
+        window.location.href = `crear-orden.html?editar=${numeroOrden}`;
+    }
+
+    function generarReporteMensualPDF(historial) {
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            const C = {
+                azul:       [13,  71,  161],
+                azulMed:    [21,  101, 192],
+                azulClaro:  [227, 242, 253],
+                azulPale:   [240, 247, 255],
+                verde:      [27,  94,  32],
+                verdeClaro: [232, 245, 233],
+                verdeMed:   [56,  142, 60],
+                naranja:    [230, 81,  0],
+                naranjaC:   [255, 243, 224],
+                morado:     [74,  20,  140],
+                moradoC:    [237, 231, 246],
+                rosa:       [136, 14,  79],
+                rosaClaro:  [252, 228, 236],
+                gris:       [96,  125, 139],
+                grisClaro:  [248, 250, 252],
+                grisLinea:  [226, 232, 240],
+                texto:      [26,  35,  50],
+                blanco:     [255, 255, 255],
+            };
+
+            const W = 210, M = 14;
+            const hoy = new Date();
+            const mesNombre = hoy.toLocaleString('es-ES', { month: 'long' });
+            const anio = hoy.getFullYear();
+            const fechaGen = hoy.toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' });
+            const horaGen  = hoy.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+
+            const ordenes = historial.filter(o => {
+                const f = new Date(o.fechaCompletado || o.fechaCreacion);
+                return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
+            });
+
+            if (ordenes.length === 0) { alert('No hay ordenes completadas este mes.'); return; }
+
+            const totalUds = ordenes.reduce((s, o) =>
+                s + (o.cantidadTotal || Object.values(o.tallas || {}).reduce((a, v) => a + v, 0)), 0);
+            const promedio = Math.round(totalUds / ordenes.length);
+
+            let y = 0;
+
+            function checkPage(needed = 20) {
+                if (y + needed > 282) { doc.addPage(); y = 18; }
+            }
+
+            function rectR(x, ry, w, h, r, fillC, strokeC) {
+                if (fillC)   { doc.setFillColor(...fillC);   doc.roundedRect(x, ry, w, h, r, r, 'F'); }
+                if (strokeC) { doc.setDrawColor(...strokeC); doc.setLineWidth(0.4); doc.roundedRect(x, ry, w, h, r, r, 'S'); }
+            }
+
+            function txt(text, tx, ty, size, color, style, align) {
+                doc.setFontSize(size);
+                doc.setFont('helvetica', style || 'normal');
+                doc.setTextColor(...color);
+                doc.text(String(text), tx, ty, { align: align || 'left' });
+            }
+
+            function sectionBar(label, extraNeeded) {
+                // Reserva espacio para la barra + lo que viene después
+                checkPage(13 + (extraNeeded || 0));
+                doc.setFillColor(...C.azul);
+                doc.roundedRect(M, y, W - M*2, 9, 2, 2, 'F');
+                txt(label, W/2, y + 6.2, 10, C.blanco, 'bold', 'center');
+                y += 13;
+            }
+
+            // ── Encabezado ────────────────────────────────────────────
+            doc.setFillColor(...C.azul);
+            doc.rect(0, 0, W, 56, 'F');
+            doc.setFillColor(255,255,255);
+            doc.setGState(doc.GState({ opacity: 0.04 }));
+            doc.circle(180, 10, 40, 'F');
+            doc.circle(20, 50, 30, 'F');
+            doc.setGState(doc.GState({ opacity: 1 }));
+
+            doc.setFillColor(...C.blanco);
+            doc.circle(M + 14, 28, 13, 'F');
+            try {
+                const logoEl = document.querySelector('img[src="logo.png"]');
+                if (logoEl && logoEl.complete) doc.addImage(logoEl.src, 'PNG', M + 4, 17, 20, 20);
+            } catch(e) {}
+
+            txt('REG MARKETING S.A.S', W/2, 18, 20, C.blanco, 'bold', 'center');
+            txt('REPORTE MENSUAL DE PRODUCCION', W/2, 27, 11, C.blanco, 'normal', 'center');
+            txt(`${mesNombre.toUpperCase()} ${anio}`, W/2, 37, 15, C.blanco, 'bold', 'center');
+            txt(`Generado el ${fechaGen} a las ${horaGen}`, W/2, 46, 7.5, [200,220,255], 'normal', 'center');
+            doc.setDrawColor(...C.azulClaro);
+            doc.setLineWidth(0.3);
+            doc.line(M, 54, W-M, 54);
+
+            y = 64;
+
+            // ── KPIs ──────────────────────────────────────────────────
+            const kpiW = (W - M*2 - 8) / 3;
+            const kpis = [
+                { v: ordenes.length, label: 'ORDENES COMPLETADAS', color: C.azulMed,  bg: C.azulPale  },
+                { v: totalUds,       label: 'UNIDADES PRODUCIDAS',  color: C.verde,    bg: C.verdeClaro },
+                { v: promedio,       label: 'PROMEDIO POR ORDEN',   color: C.morado,   bg: C.moradoC   },
+            ];
+            kpis.forEach((k, i) => {
+                const kx = M + i*(kpiW + 4);
+                rectR(kx, y, kpiW, 26, 3, k.bg, null);
+                doc.setFillColor(...k.color);
+                doc.roundedRect(kx, y, 3, 26, 1, 1, 'F');
+                txt(k.v.toString(), kx + kpiW/2, y + 14, 22, k.color, 'bold', 'center');
+                txt(k.label, kx + kpiW/2, y + 22, 6.5, C.gris, 'bold', 'center');
+            });
+            y += 34;
+
+            // ── Gráfica por día ───────────────────────────────────────
+           sectionBar(`ORDENES CREADAS POR DIA- ${mesNombre.toUpperCase()} ${anio}`, 52);
+
+            const porDia = {};
+            ordenes.forEach(o => {
+                const f = new Date(o.fechaCreacion || o.fechaCompletado);
+                const dia = f.getDate();
+                if (!porDia[dia]) porDia[dia] = { ordenes: 0, uds: 0 };
+                porDia[dia].ordenes++;
+                porDia[dia].uds += (o.cantidadTotal || Object.values(o.tallas || {}).reduce((a, v) => a + v, 0));
+            });
+
+            const dias = Object.keys(porDia).map(Number).sort((a,b) => a-b);
+            const maxOrdenesDia = Math.max(...dias.map(d => porDia[d].ordenes));
+            const maxUdsDia     = Math.max(...dias.map(d => porDia[d].uds));
+            const grafH = 52, grafW = W - M*2, grafX = M, grafY = y;
+            const barAreaH = grafH - 18;
+
+            rectR(grafX, grafY, grafW, grafH, 3, C.grisClaro, C.grisLinea);
+
+            for (let g = 0; g <= 4; g++) {
+                const gy = grafY + barAreaH - (g / 4) * barAreaH + 2;
+                doc.setDrawColor(...C.grisLinea);
+                doc.setLineWidth(0.2);
+                doc.line(grafX + 8, gy, grafX + grafW - 4, gy);
+                if (maxOrdenesDia > 0) {
+                    txt(Math.round((g / 4) * maxOrdenesDia).toString(), grafX + 7, gy + 1, 5.5, C.gris, 'normal', 'right');
+                }
+            }
+
+            const barZone = grafW - 14;
+            const barW    = Math.min(10, (barZone / Math.max(dias.length, 1)) * 0.6);
+            const barGap  = barZone / Math.max(dias.length, 1);
+            
+            dias.forEach((dia, i) => {
+                const d = porDia[dia];
+                const bx = grafX + 10 + i * barGap + (barGap - barW) / 2;
+                const hUds = maxUdsDia > 0 ? (d.uds / maxUdsDia) * barAreaH * 0.7 : 0;
+                doc.setFillColor(...C.moradoC);
+                doc.roundedRect(bx - 1, grafY + barAreaH - hUds + 2, barW + 2, hUds, 1, 1, 'F');
+                const hOrd = maxOrdenesDia > 0 ? (d.ordenes / maxOrdenesDia) * barAreaH : 0;
+                const byOrd = grafY + barAreaH - hOrd + 2;
+                doc.setFillColor(...C.azulMed);
+                doc.roundedRect(bx, byOrd, barW, hOrd, 1, 1, 'F');
+                txt(d.ordenes.toString(), bx + barW/2, byOrd - 1.5, 5.5, C.azul, 'bold', 'center');
+                txt(`${dia}`, bx + barW/2, grafY + barAreaH + 6, 5.5, C.gris, 'normal', 'center');
+                txt('Dia del mes', bx + barW/2, grafY + barAreaH + 11, 4.5, [180,190,200], 'normal', 'center');
+            });
+
+            const leyY = grafY + grafH - 7;
+            // Leyenda pegada a la izquierda
+            doc.setFillColor(...C.azulMed);
+            doc.roundedRect(grafX + 6, leyY - 3, 5, 3.5, 0.5, 0.5, 'F');
+            txt('Ordenes completadas', grafX + 13, leyY, 6, C.gris, 'normal');
+            y += grafH + 8;
+
+            // ── Producción por tipo de prenda ─────────────────────────
+            sectionBar('PRODUCCION POR TIPO DE PRENDA', 30);
+
+            const tipoPrenda = {};
+            ordenes.forEach(o => {
+                const tipo = o.tipoPrenda || 'Sin tipo';
+                const uds  = o.cantidadTotal || Object.values(o.tallas || {}).reduce((a,v) => a+v, 0);
+                if (!tipoPrenda[tipo]) tipoPrenda[tipo] = { uds: 0, ords: 0 };
+                tipoPrenda[tipo].uds  += uds;
+                tipoPrenda[tipo].ords += 1;
+            });
+
+            const tiposArr = Object.entries(tipoPrenda).sort((a,b) => b[1].uds - a[1].uds);
+            const colsT    = Math.min(tiposArr.length, 4);
+            const tW       = (W - M*2 - (colsT-1)*4) / colsT;
+            const colores  = [C.azulMed, C.verdeMed, C.naranja, C.morado];
+            const bgs      = [C.azulPale, C.verdeClaro, C.naranjaC, C.moradoC];
+
+            for (let i = 0; i < tiposArr.length; i += colsT) {
+                checkPage(30);
+                const fila = tiposArr.slice(i, i + colsT);
+                fila.forEach(([tipo, datos], j) => {
+                    const tx  = M + j*(tW + 4);
+                    const col = colores[j % colores.length];
+                    const bg  = bgs[j % bgs.length];
+                    rectR(tx, y, tW, 26, 3, bg, null);
+                    doc.setFillColor(...col);
+                    doc.rect(tx, y, tW, 3, 'F');
+                    const nombreCorto = doc.splitTextToSize(tipo, tW - 6);
+                    txt(nombreCorto[0], tx + tW/2, y + 10, 9, col, 'bold', 'center');
+                    txt(datos.uds.toString(), tx + tW/2, y + 20, 16, col, 'bold', 'center');
+                    txt(`${datos.ords} ${datos.ords===1?'orden':'ordenes'}`, tx + tW/2, y + 25, 6, C.gris, 'normal', 'center');
+                });
+                y += 30;
+            }
+
+            y += 4;
+
+            // ═══════════════════════════════════════════════════════════
+            // TABLA DETALLE
+            // ═══════════════════════════════════════════════════════════
+
+            // Separar paquetes y normales
+            const conPaquete = ordenes.filter(o => o.paqueteId);
+            const sinPaquete = ordenes.filter(o => !o.paqueteId);
+            const paquetes   = {};
+            conPaquete.forEach(o => {
+                const key = `${o.paqueteId}__${o.cliente}`;
+                if (!paquetes[key]) paquetes[key] = [];
+                paquetes[key].push(o);
+            });
+
+            const cols = [
+                { h: 'N Orden',     w: 22, al: 'center' },
+                { h: 'Cliente',     w: 46, al: 'left'   },
+                { h: 'Tipo Prenda', w: 50, al: 'left'   },
+                { h: 'Unidades',    w: 22, al: 'center' },
+                { h: 'Completada',  w: 28, al: 'center' },
+            ];
+
+            function headerTabla() {
+                let cx = M;
+                doc.setFillColor(...C.azulClaro);
+                doc.rect(M, y, W-M*2, 8, 'F');
+                cols.forEach(col => {
+                    txt(col.h,
+                        col.al==='center' ? cx+col.w/2 : cx+2,
+                        y+5.5, 8, C.azulMed, 'bold',
+                        col.al==='center' ? 'center' : 'left');
+                    cx += col.w;
+                });
+                y += 8;
+            }
+
+            function filaOrden(orden, idx) {
+                const uds = orden.cantidadTotal || Object.values(orden.tallas||{}).reduce((a,v)=>a+v,0);
+                const fc  = new Date(orden.fechaCompletado || orden.fechaCreacion)
+                    .toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit'});
+                const bg = idx%2===0 ? C.blanco : C.grisClaro;
+                doc.setFillColor(...bg);
+                doc.rect(M, y, W-M*2, 8, 'F');
+                doc.setDrawColor(...C.grisLinea);
+                doc.setLineWidth(0.15);
+                doc.line(M, y+8, W-M, y+8);
+                const vals = [orden.numeroOrden, orden.cliente||'-', orden.tipoPrenda||'-', uds.toString(), fc];
+                let cx = M;
+                vals.forEach((val, vi) => {
+                    const col = cols[vi];
+                    txt(val, col.al==='center' ? cx+col.w/2 : cx+2, y+5.2, 8, C.texto,
+                        vi===0?'bold':'normal', col.al==='center'?'center':'left');
+                    cx += col.w;
+                });
+                y += 8;
+            }
+
+            // Sección con espacio suficiente para header + primeras filas
+            const primerasFilas = Math.min(ordenes.length, 3);
+            checkPage(13 + 8 + primerasFilas * 8);
+            // Barra de sección manualmente (sin checkPage interno)
+            doc.setFillColor(...C.azul);
+            doc.roundedRect(M, y, W - M*2, 9, 2, 2, 'F');
+            txt('DETALLE DE ORDENES DEL MES', W/2, y + 6.2, 10, C.blanco, 'bold', 'center');
+            y += 13;
+            headerTabla();
+
+            let rowIdx = 0;
+
+            // Paquetes agrupados
+            Object.entries(paquetes).forEach(([key, ords]) => {
+                const alturaTotal = 8 + ords.length * 8;
+                checkPage(alturaTotal + 6);
+
+                const pkgId  = key.split('__')[0];
+                const totPkg = ords.reduce((s,o)=>s+(o.cantidadTotal||Object.values(o.tallas||{}).reduce((a,v)=>a+v,0)),0);
+                const fc     = new Date(ords[0].fechaCompletado||ords[0].fechaCreacion)
+                    .toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit'});
+
+                const yInicio = y;
+
+                // Cabecera: redondeada arriba, cuadrada abajo
+                doc.setFillColor(...C.rosa);
+                doc.roundedRect(M, y, W-M*2, 8, 2, 2, 'F');
+                doc.rect(M, y+4, W-M*2, 4, 'F'); // tapa esquinas inferiores
+                txt(`PKG: ${pkgId}  -  ${ords[0].cliente}`, M+3, y+5.5, 8, C.blanco, 'bold');
+                txt(`${ords.length} prendas - ${totPkg} uds  |  ${fc}`, W-M-3, y+5.5, 7.5, C.blanco, 'normal', 'right');
+                y += 8;
+
+                ords.forEach((o, fi) => {
+                    const uds   = o.cantidadTotal || Object.values(o.tallas||{}).reduce((a,v)=>a+v,0);
+                    const fecha = new Date(o.fechaCompletado||o.fechaCreacion)
+                        .toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit'});
+                    const esUltima = fi === ords.length - 1;
+
+                    doc.setFillColor(...C.rosaClaro);
+                    if (esUltima) {
+                        doc.roundedRect(M, y, W-M*2, 8, 2, 2, 'F');
+                        doc.rect(M, y, W-M*2, 4, 'F'); // tapa esquinas superiores
+                    } else {
+                        doc.rect(M, y, W-M*2, 8, 'F');
+                        doc.setDrawColor(...C.grisLinea);
+                        doc.setLineWidth(0.15);
+                        doc.line(M+2, y+8, W-M, y+8);
+                    }
+
+                    // Barra lateral rosa
+                    doc.setFillColor(...C.rosa);
+                    doc.rect(M, y, 1.5, 8, 'F');
+
+                    const vals = [o.numeroOrden, o.cliente||'-', o.tipoPrenda||'-', uds.toString(), fecha];
+                    let cx = M;
+                    vals.forEach((val, vi) => {
+                        const col = cols[vi];
+                        txt(val, col.al==='center' ? cx+col.w/2 : cx+3, y+5.2, 8, C.texto,
+                            vi===0?'bold':'normal', col.al==='center'?'center':'left');
+                        cx += col.w;
+                    });
+                    y += 8;
+                });
+
+                // Borde alrededor del grupo
+                doc.setDrawColor(...C.rosa);
+                doc.setLineWidth(0.4);
+                doc.roundedRect(M, yInicio, W-M*2, y - yInicio, 2, 2, 'S');
+                y += 4;
+            });
+
+            // Órdenes normales
+            sinPaquete.forEach(o => {
+                checkPage(10);
+                filaOrden(o, rowIdx);
+                rowIdx++;
+            });
+
+            doc.setDrawColor(...C.azulMed);
+            doc.setLineWidth(0.4);
+            doc.line(M, y, W-M, y);
+            y += 10;
+
+            // ── Resumen final ─────────────────────────────────────────
+            checkPage(28);
+            rectR(M, y, W-M*2, 24, 3, C.azulPale, C.azulClaro);
+            doc.setFillColor(...C.azulMed);
+            doc.rect(M, y, W-M*2, 3, 'F');
+            txt('RESUMEN DEL PERIODO', M+5, y+10, 9, C.azul, 'bold');
+            txt(`Total ordenes completadas: ${ordenes.length}`,   M+5,   y+17, 8.5, C.texto, 'normal');
+            txt(`Total unidades producidas: ${totalUds}`,         M+5,   y+22, 8.5, C.texto, 'normal');
+            txt(`Promedio unidades por orden: ${promedio}`,       W/2+4, y+17, 8.5, C.texto, 'normal');
+            txt(`Mes reportado: ${mesNombre} ${anio}`,            W/2+4, y+22, 8.5, C.texto, 'normal');
+
+            // ── Pie de página ─────────────────────────────────────────
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let p = 1; p <= totalPages; p++) {
+                doc.setPage(p);
+                const pH = doc.internal.pageSize.height;
+                doc.setFillColor(...C.azul);
+                doc.rect(0, pH-12, W, 12, 'F');
+                doc.setDrawColor(...C.azulMed);
+                doc.setLineWidth(0.3);
+                doc.line(0, pH-12, W, pH-12);
+                txt('REG MARKETING S.A.S  -  Sistema de Gestion de Produccion Textil', M, pH-4.5, 7.5, C.blanco, 'normal');
+                txt(`Pagina ${p} de ${totalPages}`, W-M, pH-4.5, 7.5, C.blanco, 'normal', 'right');
+            }
+
+            doc.save(`Reporte_Produccion_${mesNombre}_${anio}.pdf`);
+
+        } catch(err) {
+            console.error('Error PDF:', err);
+            alert('Error al generar PDF: ' + err.message);
+        }
+    }
+
+    function mostrarModalConfirmacion(titulo, mensaje, textoNo, textoSi) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+                background:rgba(13,71,161,0.75);backdrop-filter:blur(6px);
+                display:flex;align-items:center;justify-content:center;
+                z-index:999999;padding:20px;`;
+
+            modal.innerHTML = `
+                <div style="background:white;padding:40px;border-radius:22px;max-width:460px;
+                    text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+                    font-family:'Outfit',sans-serif;animation:pageIn 0.3s ease;">
+                    <div style="width:72px;height:72px;border-radius:50%;
+                        background:#FFF8E1;display:flex;align-items:center;
+                        justify-content:center;margin:0 auto 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:#F57C00;"></i>
+                    </div>
+                    <h2 style="color:#1A2332;font-size:1.3rem;font-weight:800;margin-bottom:10px;">${titulo}</h2>
+                    <p style="color:#607D8B;font-size:0.95rem;margin-bottom:28px;line-height:1.6;">${mensaje}</p>
+                    <div style="display:flex;gap:12px;justify-content:center;">
+                        <button id="btnNo" style="padding:12px 28px;border:none;border-radius:12px;
+                            background:#EEF2F7;color:#607D8B;font-weight:600;cursor:pointer;
+                            font-size:0.95rem;font-family:'Outfit',sans-serif;
+                            display:inline-flex;align-items:center;gap:7px;transition:all 0.2s;">
+                            <i class="fas fa-times"></i> ${textoNo}
+                        </button>
+                        <button id="btnSi" style="padding:12px 28px;border:none;border-radius:12px;
+                            background:linear-gradient(135deg,#B71C1C,#E53935);color:white;
+                            font-weight:700;cursor:pointer;font-size:0.95rem;font-family:'Outfit',sans-serif;
+                            box-shadow:0 4px 14px rgba(183,28,28,0.35);
+                            display:inline-flex;align-items:center;gap:7px;transition:all 0.2s;">
+                            <i class="fas fa-check"></i> ${textoSi}
+                        </button>
+                    </div>
+                </div>`;
+
+            document.body.appendChild(modal);
+            document.getElementById('btnNo').onclick  = () => { modal.remove(); resolve(false); };
+            document.getElementById('btnSi').onclick  = () => { modal.remove(); resolve(true); };
+            modal.onclick = e => { if (e.target === modal) { modal.remove(); resolve(false); } };
+        });
+    }
+
+    async function abrirModalPaquete() {
+        const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+        const historialLocal = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+        const paquetesExistentes = [
+            ...ordenes.filter(o => o.paqueteId).map(o => o.paqueteId),
+            ...historialLocal.filter(o => o.paqueteId).map(o => o.paqueteId)
+        ];
+        let numPaquete = 1;
+        while (paquetesExistentes.includes(`PKG-${String(numPaquete).padStart(3,'0')}`)) numPaquete++;
+        const paqueteId = `PKG-${String(numPaquete).padStart(3,'0')}`;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+            background:rgba(13,71,161,0.75);backdrop-filter:blur(6px);
+            display:flex;align-items:center;justify-content:center;
+            z-index:99999;padding:20px;`;
+
+        overlay.innerHTML = `
+            <div style="background:white;border-radius:22px;width:100%;max-width:680px;
+                max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+                font-family:'Outfit',sans-serif;">
+
+                <div style="background:linear-gradient(135deg,#880E4F,#AD1457);
+                    border-radius:22px 22px 0 0;padding:20px 24px;
+                    display:flex;justify-content:space-between;align-items:center;
+                    position:sticky;top:0;z-index:10;">
+                    <div style="color:white;">
+                        <div style="font-size:1.2rem;font-weight:800;">
+                            <i class="fas fa-layer-group"></i> Nuevo Paquete de Uniforme
+                        </div>
+                        <div style="font-size:0.8rem;opacity:0.85;margin-top:2px;">ID: ${paqueteId}</div>
+                    </div>
+                    <button id="btnCerrarPaquete" style="width:34px;height:34px;border:none;border-radius:50%;
+                        background:rgba(255,255,255,0.2);color:white;cursor:pointer;font-size:1rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div style="padding:24px;">
+
+                    <!-- DATOS GENERALES -->
+                    <div style="background:#F8FAFF;border-radius:14px;padding:16px;margin-bottom:18px;
+                        border:1.5px solid #E3F2FD;">
+                        <div style="font-size:0.82rem;font-weight:700;color:#1565C0;
+                            text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">
+                            <i class="fas fa-user"></i> Datos Generales del Pedido
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:#607D8B;
+                                    text-transform:uppercase;display:block;margin-bottom:4px;">Cliente *</label>
+                                <input id="pkgCliente" type="text" placeholder="Nombre del cliente"
+                                    style="width:100%;padding:9px 12px;border:1.5px solid #E8EDF2;
+                                    border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:#607D8B;
+                                    text-transform:uppercase;display:block;margin-bottom:4px;">Arte / Diseño</label>
+                                <input id="pkgArte" type="text" placeholder="Nombre del diseño"
+                                    style="width:100%;padding:9px 12px;border:1.5px solid #E8EDF2;
+                                    border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:#607D8B;
+                                    text-transform:uppercase;display:block;margin-bottom:4px;">Fecha Pedido *</label>
+                                <input id="pkgFechaPedido" type="date"
+                                    style="width:100%;padding:9px 12px;border:1.5px solid #E8EDF2;
+                                    border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:#C62828;
+                                    text-transform:uppercase;display:block;margin-bottom:4px;">Fecha Entrega *</label>
+                                <input id="pkgFechaEntrega" type="date"
+                                    style="width:100%;padding:9px 12px;border:1.5px solid #FFCDD2;
+                                    border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PRENDAS -->
+                    <div style="font-size:0.85rem;font-weight:700;color:#1A2332;margin-bottom:10px;">
+                        <i class="fas fa-tshirt" style="color:#AD1457;"></i> Prendas del uniforme
+                    </div>
+                    <div id="listaPrendasPaquete" style="display:flex;flex-direction:column;gap:12px;"></div>
+                    <button id="btnAgregarPrenda" style="margin-top:10px;padding:9px 18px;
+                        border:1.5px dashed #AD1457;border-radius:10px;background:#FFF0F5;
+                        color:#AD1457;font-weight:600;font-size:0.85rem;cursor:pointer;
+                        font-family:'Outfit',sans-serif;display:inline-flex;align-items:center;gap:6px;
+                        width:100%;justify-content:center;">
+                        <i class="fas fa-plus"></i> Agregar otra prenda
+                    </button>
+
+                    <!-- BOTONES FINALES -->
+                    <div style="display:flex;gap:10px;justify-content:flex-end;
+                        margin-top:20px;padding-top:16px;border-top:2px solid #EEF2F7;">
+                        <button id="btnCancelarPaquete" style="padding:10px 22px;border:1.5px solid #E8EDF2;
+                            border-radius:10px;background:white;color:#607D8B;font-weight:600;
+                            cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.9rem;">
+                            Cancelar
+                        </button>
+                        <button id="btnCrearPaquete" style="padding:10px 22px;border:none;border-radius:10px;
+                            background:linear-gradient(135deg,#880E4F,#AD1457);color:white;font-weight:700;
+                            cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.9rem;
+                            box-shadow:0 4px 14px rgba(136,14,79,0.35);
+                            display:inline-flex;align-items:center;gap:7px;">
+                            <i class="fas fa-save"></i> Crear Paquete
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('pkgFechaPedido').value = today;
+
+        agregarFilaPrenda();
+
+        document.getElementById('btnAgregarPrenda').onclick = () => agregarFilaPrenda();
+        document.getElementById('btnCerrarPaquete').onclick = () => overlay.remove();
+        document.getElementById('btnCancelarPaquete').onclick = () => overlay.remove();
+        overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+        document.getElementById('btnCrearPaquete').onclick = async () => {
+            const cliente = document.getElementById('pkgCliente').value.trim();
+            const arte = document.getElementById('pkgArte').value.trim();
+            const fechaPedido = document.getElementById('pkgFechaPedido').value;
+            const fechaEntrega = document.getElementById('pkgFechaEntrega').value;
+
+            if (!cliente || !fechaPedido || !fechaEntrega) {
+                mostrarNotificacion('⚠️ Completa cliente y fechas', 'error');
+                return;
+            }
+
+            const filas = document.querySelectorAll('.fila-prenda-pkg');
+            if (filas.length === 0) {
+                mostrarNotificacion('⚠️ Agrega al menos una prenda', 'error');
+                return;
+            }
+
+            const prendas = [];
+            let valido = true;
+            filas.forEach(fila => {
+                const tipo = fila.querySelector('.select-tipo-pkg').value;
+                if (!tipo) { valido = false; return; }
+
+                const tipoTallas = obtenerTipoTallas(tipo);
+                let tallas = {};
+                let cantidadTotal = 0;
+
+                if (tipoTallas === 'cantidad') {
+                    cantidadTotal = parseInt(fila.querySelector('.input-cantidad-simple')?.value) || 0;
+                    if (cantidadTotal === 0) { valido = false; return; }
+                } else {
+                    const inputs = fila.querySelectorAll('.input-talla-pkg');
+                    inputs.forEach(inp => {
+                        const val = parseInt(inp.value) || 0;
+                        if (val > 0) tallas[inp.dataset.talla] = val;
+                        cantidadTotal += val;
+                    });
+                    if (cantidadTotal === 0) { valido = false; return; }
+                }
+
+                const imagen = fila._imagenBase64 || null;
+                const reqs = {};
+                fila.querySelectorAll('.req-pkg').forEach(cb => {
+                    reqs[cb.dataset.req] = cb.checked;
+                });
+                prendas.push({ 
+                    tipo, tallas, cantidadTotal, imagen, tipoTallas, 
+                    requerimientos: reqs,
+                    tela: fila.querySelector('.select-tela-pkg')?.value === 'Otra'
+                        ? (fila.querySelector('.input-tela-otra-pkg')?.value || 'Otra')
+                        : (fila.querySelector('.select-tela-pkg')?.value || ''),
+                    cuello: fila.querySelector('.select-cuello-pkg')?.value || '',
+                    marquilla: fila.querySelector('.select-marquilla-pkg')?.value || '',
+                    observaciones: fila.querySelector('.input-obs-pkg')?.value || ''
+                });
+            });
+
+            if (!valido) {
+                mostrarNotificacion('⚠️ Completa las cantidades de cada prenda', 'error');
+                return;
+            }
+
+            let siguienteNumero = 1;
+            try {
+                const num = await window.DB.obtenerSiguienteNumeroOrden();
+                siguienteNumero = parseInt(num) || 1;
+            } catch(e) {}
+
+            const ordenesCreadas = [];
+            for (let i = 0; i < prendas.length; i++) {
+                const prenda = prendas[i];
+                const numeroOrden = String(siguienteNumero + i).padStart(4, '0');
+                const orden = {
+                    numeroOrden,
+                    cliente,
+                    arte,
+                    fechaPedido,
+                    fechaEntrega,
+                    tipoPrenda: prenda.tipo,
+                    cantidadTotal: prenda.tipoTallas === 'cantidad' ? prenda.cantidadTotal : 0,
+                    tallas: prenda.tallas,
+                    paqueteId,
+                    imagenDiseno: prenda.imagen,
+                    descripcionPedido: `Parte de ${paqueteId}`,
+                    requerimientos: prenda.requerimientos,
+                    tela: prenda.tela || '',
+                    cuello: prenda.cuello || '',
+                    colorCuello: '',
+                    marquilla: prenda.marquilla || '',
+                    ancho: '', molde: '', anchoBies: '', dobladillo: '',
+                    observaciones: prenda.observaciones || `Paquete ${paqueteId} — ${prendas.length} prendas`,
+                    fechaCreacion: new Date().toISOString(),
+                    estado: {
+                        corte: 'pendiente', confeccion: 'pendiente',
+                        impresion: 'pendiente', sublimacion: 'pendiente', despacho: 'pendiente'
+                    }
+                };
+                ordenesCreadas.push(orden);
+            }
+
+            let exitosos = 0;
+            for (const orden of ordenesCreadas) {
+                try {
+                    const res = await window.DB.crearOrden(orden);
+                    if (res.success) exitosos++;
+                    let ords = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                    ords.push(orden);
+                    localStorage.setItem('ordenes', JSON.stringify(ords));
+                } catch(e) {
+                    let ords = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                    ords.push(orden);
+                    localStorage.setItem('ordenes', JSON.stringify(ords));
+                    exitosos++;
+                }
+            }
+
+            overlay.remove();
+            mostrarNotificacion(`✅ Paquete ${paqueteId} creado con ${exitosos} órdenes`, 'success');
+            cargarOrdenes();
+        };
+    }
+
+    function obtenerTipoTallas(tipoPrenda) {
+        const mapa = {
+            'Camiseta': 'infantil-adulto', 'Camiseta Polo': 'infantil-adulto',
+            'Blusa': 'infantil-adulto', 'Camisa Manga Corta': 'infantil-adulto',
+            'Camisa Manga Larga': 'infantil-adulto',
+            'Chaqueta': 'chaquetas', 'Sudadera': 'sudaderas', 'Jogger': 'sudaderas',
+            'Pantaloneta': 'pantalonetas', 'Pijama': 'pijamas',
+            'Jeans': 'pantalon-mujer-hombre',
+            'Totebag': 'cantidad', 'Tula': 'cantidad', 'Mochila': 'cantidad',
+            'Gorra': 'cantidad', 'Toalla': 'cantidad', 'Manga': 'cantidad', 'Delantal': 'cantidad'
+        };
+        return mapa[tipoPrenda] || 'infantil-adulto';
+    }
+
+    function obtenerHTMLTallas(tipoTallas, idFila) {
+        if (tipoTallas === 'cantidad') {
+            return `<div style="margin-top:10px;">
+                <label style="font-size:0.75rem;font-weight:700;color:#607D8B;display:block;margin-bottom:4px;">CANTIDAD</label>
+                <input type="number" class="input-cantidad-simple" min="1" placeholder="Ej: 50"
+                    style="width:120px;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;
+                    font-family:'Outfit',sans-serif;font-size:0.9rem;text-align:center;">
+            </div>`;
+        }
+
+        const tablaStyle = `border-collapse:collapse;width:100%;margin-top:10px;`;
+        const thStyle = `padding:6px 4px;text-align:center;font-size:0.72rem;font-weight:700;color:white;`;
+        const tdStyle = `padding:4px;text-align:center;border:1px solid #E3F2FD;`;
+        const inputStyle = `width:44px;text-align:center;border:1.5px solid #E8EDF2;padding:5px 2px;
+            border-radius:6px;font-size:0.85rem;font-weight:600;font-family:'Outfit',sans-serif;`;
+
+        if (tipoTallas === 'infantil-adulto') {
+            return `
+            <div style="overflow-x:auto;margin-top:10px;">
+                <table style="${tablaStyle}">
+                    <thead><tr style="background:#1565C0;">
+                        <th style="${thStyle}">2T</th><th style="${thStyle}">3T</th><th style="${thStyle}">4T</th>
+                        <th style="${thStyle}">5T</th><th style="${thStyle}">2</th><th style="${thStyle}">4</th>
+                        <th style="${thStyle}">6</th><th style="${thStyle}">8</th><th style="${thStyle}">10</th>
+                        <th style="${thStyle}">12</th><th style="${thStyle}">14</th><th style="${thStyle}">16</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['2T','3T','4T','5T','2','4','6','8','10','12','14','16'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+                <table style="${tablaStyle} margin-top:4px;">
+                    <thead><tr style="background:#1565C0;">
+                        <th style="${thStyle}">XS</th><th style="${thStyle}">S</th><th style="${thStyle}">M</th>
+                        <th style="${thStyle}">L</th><th style="${thStyle}">XL</th><th style="${thStyle}">2XL</th>
+                        <th style="${thStyle}">3XL</th><th style="${thStyle}">4XL</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['XS','S','M','L','XL','2XL','3XL','4XL'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+            </div>`;
+        }
+
+        if (tipoTallas === 'chaquetas' || tipoTallas === 'sudaderas' || tipoTallas === 'pantalonetas' || tipoTallas === 'pijamas') {
+            const colorMap = {
+                'chaquetas': '#4527A0', 'sudaderas': '#2E7D32',
+                'pantalonetas': '#E65100', 'pijamas': '#6A1B9A'
+            };
+            const color = colorMap[tipoTallas];
+            return `
+            <div style="overflow-x:auto;margin-top:10px;">
+                <table style="${tablaStyle}">
+                    <thead><tr style="background:${color};">
+                        <th style="${thStyle}">S</th><th style="${thStyle}">M</th>
+                        <th style="${thStyle}">L</th><th style="${thStyle}">XL</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['S','M','L','XL'].map(t => {
+                            const key = tipoTallas === 'chaquetas' ? `CH-${t}` :
+                                        tipoTallas === 'sudaderas' ? `SD-${t}` :
+                                        tipoTallas === 'pantalonetas' ? `PT-${t}` : `PJ-${t}`;
+                            return `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="${key}" min="0" value="0" style="${inputStyle}"></td>`;
+                        }).join('')}
+                    </tr></tbody>
+                </table>
+            </div>`;
+        }
+
+        if (tipoTallas === 'pantalon-mujer-hombre') {
+            return `
+            <div style="overflow-x:auto;margin-top:10px;">
+                <div style="font-size:0.72rem;font-weight:700;color:#AD1457;margin-bottom:3px;">MUJER</div>
+                <table style="${tablaStyle}">
+                    <thead><tr style="background:#AD1457;">
+                        ${['4','6','8','10','12','14','16','18','20','22'].map(t =>
+                            `<th style="${thStyle}">${t}</th>`).join('')}
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['4','6','8','10','12','14','16','18','20','22'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="PM-${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+                <div style="font-size:0.72rem;font-weight:700;color:#1565C0;margin:6px 0 3px;">HOMBRE</div>
+                <table style="${tablaStyle}">
+                    <thead><tr style="background:#1565C0;">
+                        ${['26','28','30','32','34','36','38','40','42','44'].map(t =>
+                            `<th style="${thStyle}">${t}</th>`).join('')}
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['26','28','30','32','34','36','38','40','42','44'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="PH-${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+            </div>`;
+        }
+
+        return '';
+    }
+
+    function agregarFilaPrenda() {
+        const lista = document.getElementById('listaPrendasPaquete');
+        const idFila = `prenda-${Date.now()}`;
+        const fila = document.createElement('div');
+        fila.className = 'fila-prenda-pkg';
+        fila.id = idFila;
+        fila._imagenBase64 = null;
+
+        const todasLasPrendas = [
+            'Camiseta','Camiseta Polo','Blusa','Camisa Manga Corta','Camisa Manga Larga',
+            'Chaqueta','Sudadera','Jogger','Pantaloneta','Pijama','Jeans',
+            'Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal'
+        ];
+
+        fila.style.cssText = `background:#F8FAFF;border:1.5px solid #E3F2FD;
+            border-radius:14px;padding:14px;position:relative;`;
+
+        fila.innerHTML = `
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <!-- Imagen -->
+                <div style="flex-shrink:0;">
+                    <div class="upload-mini" id="upload-${idFila}"
+                        style="width:72px;height:72px;border:2px dashed #90CAF9;border-radius:10px;
+                        background:#EBF5FF;display:flex;flex-direction:column;align-items:center;
+                        justify-content:center;cursor:pointer;transition:all 0.2s;font-size:0.6rem;
+                        color:#90CAF9;text-align:center;gap:2px;">
+                        <i class="fas fa-camera" style="font-size:1.2rem;"></i>
+                        <span>Foto</span>
+                    </div>
+                    <input type="file" id="file-${idFila}" accept="image/*" style="display:none;">
+                </div>
+                <!-- Tipo -->
+                <div style="flex:1;">
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;
+                        text-transform:uppercase;display:block;margin-bottom:4px;">Prenda</label>
+                    <select class="select-tipo-pkg"
+                        style="width:100%;padding:9px 12px;border:1.5px solid #E8EDF2;
+                        border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;color:#1A2332;">
+                        <option value="">Seleccionar tipo...</option>
+                        ${todasLasPrendas.map(p => `<option value="${p}">${p}</option>`).join('')}
+                    </select>
+                </div>
+                <!-- Eliminar -->
+                <button onclick="document.getElementById('${idFila}').remove()"
+                    style="width:30px;height:30px;border:none;border-radius:8px;
+                    background:#FFF5F5;color:#E53935;cursor:pointer;font-size:0.85rem;flex-shrink:0;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <!-- Requerimientos -->
+            <div style="margin-top:10px;">
+                <label style="font-size:0.72rem;font-weight:700;color:#607D8B;
+                    text-transform:uppercase;display:block;margin-bottom:6px;">Requerimientos</label>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                    ${['corte','confeccion','impresion','sublimacion','estampado','dtf','corteLaser','despacho'].map(req => `
+                    <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;
+                        border-radius:8px;border:1.5px solid #E8EDF2;cursor:pointer;
+                        font-size:0.78rem;font-weight:600;color:#607D8B;
+                        transition:all 0.2s;" class="req-pkg-label">
+                        <input type="checkbox" class="req-pkg" data-req="${req}"
+                            ${req === 'despacho' ? 'checked' : ''}
+                            style="accent-color:#AD1457;width:14px;height:14px;">
+                        ${req === 'corteLaser' ? 'C.Láser' : req === 'dtf' ? 'DTF' : req.charAt(0).toUpperCase() + req.slice(1)}
+                    </label>`).join('')}
+                </div>
+            </div>
+            <!-- Especificaciones -->
+            <div class="specs-pkg" style="display:none;margin-top:10px;grid-template-columns:1fr 1fr;gap:8px;">
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Tela</label>
+                    <select class="select-tela-pkg" onchange="toggleOtraTelapkg(this)"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="PIEL-DURAZNO">PIEL DURAZNO</option>
+                        <option value="SUDAFRICA">SUDAFRICA</option>
+                        <option value="Otra">Otra</option>
+                    </select>
+                    <input type="text" class="input-tela-otra-pkg" placeholder="Especifica la tela..."
+                        style="display:none;margin-top:4px;width:100%;padding:7px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Cuello</label>
+                    <select class="select-cuello-pkg"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="Redondo">Redondo</option>
+                        <option value="V">En V</option>
+                        <option value="Sublimado">Sublimado</option>
+                        <option value="Polo">Polo</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Marquilla</label>
+                    <select class="select-marquilla-pkg"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="OTRO">OTRO</option>
+                        <option value="REG">SCHUSTER</option>
+                        <option value="Sin marquilla">Sin marquilla</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Observaciones</label>
+                    <input type="text" class="input-obs-pkg" placeholder="Detalles especiales..."
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                </div>
+            </div>
+            <!-- Tallas (se carga dinámicamente) -->
+            <div class="contenedor-tallas-${idFila}"></div>`;
+
+        lista.appendChild(fila);
+
+        // Evento cambio de tipo
+        fila.querySelector('.select-tipo-pkg').addEventListener('change', function() {
+            const tipo = this.value;
+            const contenedor = fila.querySelector(`.contenedor-tallas-${idFila}`);
+            const especificaciones = fila.querySelector('.specs-pkg');
+            
+            if (!tipo) { 
+                contenedor.innerHTML = ''; 
+                if (especificaciones) especificaciones.style.display = 'none';
+                return; 
+            }
+            
+            const tipoTallas = obtenerTipoTallas(tipo);
+            contenedor.innerHTML = obtenerHTMLTallas(tipoTallas, idFila);
+            
+            // Prendas que NO necesitan especificaciones
+            const sinEspecs = ['Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal'];
+            if (especificaciones) {
+                especificaciones.style.display = sinEspecs.includes(tipo) ? 'none' : 'grid';
+            }
+        });
+
+        // Evento imagen
+        const uploadDiv = document.getElementById(`upload-${idFila}`);
+        const fileInput = document.getElementById(`file-${idFila}`);
+
+        uploadDiv.onclick = () => fileInput.click();
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                fila._imagenBase64 = e.target.result;
+                uploadDiv.innerHTML = `<img src="${e.target.result}"
+                    style="width:68px;height:68px;object-fit:cover;border-radius:8px;">`;
+                uploadDiv.style.border = '2px solid #2E7D32';
+                uploadDiv.style.padding = '0';
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function togglePaquete(pkgUid) {
+        const contenido = document.getElementById(`contenido-${pkgUid}`);
+        const chevron = document.getElementById(`chevron-${pkgUid}`);
+        const abierto = contenido.style.maxHeight && contenido.style.maxHeight !== '0px';
+
+        const header = contenido.previousElementSibling;
+        if (abierto) {
+            contenido.style.maxHeight = contenido.scrollHeight + 'px';
+            requestAnimationFrame(() => { contenido.style.maxHeight = '0px'; });
+            chevron.style.transform = 'rotate(0deg)';
+            header.classList.remove('abierto');
+        } else {
+            contenido.style.maxHeight = contenido.scrollHeight + 'px';
+            chevron.style.transform = 'rotate(180deg)';
+            header.classList.add('abierto');
+            setTimeout(() => { contenido.style.maxHeight = 'none'; }, 400);
+        }
+    }
+
+    async function completarPaquete(paqueteId) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+            background:rgba(0,0,0,0.8);display:flex;align-items:center;
+            justify-content:center;z-index:99999;`;
+
+        modal.innerHTML = `
+            <div style="background:white;padding:40px;border-radius:20px;max-width:500px;
+                text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.3);font-family:'Outfit',sans-serif;">
+                <div style="width:72px;height:72px;border-radius:50%;background:#E8F5E9;
+                    display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                    <i class="fas fa-boxes" style="font-size:2rem;color:#2E7D32;"></i>
+                </div>
+                <h2 style="color:#1A2332;margin-bottom:12px;">¿Mover paquete al historial?</h2>
+                <p style="color:#607D8B;font-size:0.95rem;margin-bottom:8px;">
+                    El paquete <strong>${paqueteId}</strong> y todas sus órdenes se moverán al historial.
+                </p>
+                <p style="color:#607D8B;font-size:0.85rem;margin-bottom:28px;">Esta acción no se puede deshacer.</p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button id="btnCancelarPkg" style="padding:12px 28px;border:none;border-radius:10px;
+                        background:#EEF2F7;color:#607D8B;font-weight:600;cursor:pointer;
+                        font-size:0.95rem;font-family:'Outfit',sans-serif;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button id="btnConfirmarPkg" style="padding:12px 28px;border:none;border-radius:10px;
+                        background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;
+                        font-weight:700;cursor:pointer;font-size:0.95rem;font-family:'Outfit',sans-serif;
+                        box-shadow:0 4px 14px rgba(27,94,32,0.35);">
+                        <i class="fas fa-check"></i> Sí, mover todo
+                    </button>
+                </div>
+            </div>`;
+
+        document.body.appendChild(modal);
+
+        const confirmar = await new Promise(resolve => {
+            document.getElementById('btnCancelarPkg').onclick = () => { modal.remove(); resolve(false); };
+            document.getElementById('btnConfirmarPkg').onclick = () => { modal.remove(); resolve(true); };
+            modal.onclick = e => { if (e.target === modal) { modal.remove(); resolve(false); } };
+        });
+
+        if (!confirmar) return;
+
+        let ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+        const ordenesPaquete = ordenes.filter(o => o.paqueteId === paqueteId);
+
+        let exitosos = 0;
+        for (const orden of ordenesPaquete) {
+            try {
+                await window.DB.moverAHistorial(orden);
+                exitosos++;
+                let historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+                historial.push({ ...orden, fechaCompletado: new Date().toISOString() });
+                localStorage.setItem('historialOrdenes', JSON.stringify(historial));
+            } catch(e) {
+                console.error('Error moviendo orden al historial:', e);
+            }
+        }
+
+        ordenes = ordenes.filter(o => o.paqueteId !== paqueteId);
+        localStorage.setItem('ordenes', JSON.stringify(ordenes));
+
+        mostrarNotificacion(`🎉 Paquete ${paqueteId} completado — ${exitosos} órdenes al historial`, 'success');
+        cargarOrdenes();
+    }
+
+    function toggleOtraTelapkg(sel) {
+        const inp = sel.parentElement.querySelector('.input-tela-otra-pkg');
+        inp.style.display = sel.value === 'Otra' ? 'block' : 'none';
+        if (sel.value !== 'Otra') inp.value = '';
+    }
+    </script>
+</body>
+</html>

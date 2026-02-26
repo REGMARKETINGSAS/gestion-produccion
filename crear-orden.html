@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Orden de Producción - REG Marketing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { min-height:100vh; font-family:'Outfit',sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #0D47A1 0%, #1565C0 45%, #1976D2 100%);
+            padding: 24px 16px 60px;
+            position:relative; overflow-x:hidden;
+        }
+
+        .bg-circles { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+        .bg-circles span {
+            position:absolute; border-radius:50%;
+            background:rgba(255,255,255,0.04);
+            animation:floatUp linear infinite;
+        }
+        .bg-circles span:nth-child(1){ width:80px;  height:80px;  left:7%;  animation-duration:20s; }
+        .bg-circles span:nth-child(2){ width:30px;  height:30px;  left:20%; animation-duration:14s; animation-delay:3s; }
+        .bg-circles span:nth-child(3){ width:55px;  height:55px;  left:63%; animation-duration:18s; animation-delay:6s; }
+        .bg-circles span:nth-child(4){ width:120px; height:120px; left:80%; animation-duration:25s; animation-delay:1s; }
+        .bg-circles span:nth-child(5){ width:22px;  height:22px;  left:45%; animation-duration:12s; animation-delay:8s; }
+        .bg-circles span:nth-child(6){ width:65px;  height:65px;  left:33%; animation-duration:21s; animation-delay:4s; }
+
+        @keyframes floatUp {
+            0%   { transform:translateY(110vh) rotate(0deg);   opacity:0; }
+            8%   { opacity:1; } 92% { opacity:1; }
+            100% { transform:translateY(-10vh) rotate(540deg); opacity:0; }
+        }
+
+        .wrapper {
+            position:relative; z-index:1;
+            width:100%; max-width:900px; margin:0 auto;
+            animation: pageIn 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes pageIn {
+            from { opacity:0; transform:translateY(24px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Header */
+        .page-header { text-align:center; margin-bottom:28px; }
+        .logo-wrap {
+            width:82px; height:82px;
+            background:rgba(255,255,255,0.92);
+            border:3px solid rgba(255,255,255,0.95);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 14px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.2);
+        }
+        .logo-wrap img { width:52px; height:52px; object-fit:contain; }
+        .logo-wrap i   { font-size:2rem; color:#1565C0; display:none; }
+        .page-header h1 {
+            font-size:2rem; font-weight:800; color:white;
+            letter-spacing:2px; text-shadow:0 2px 12px rgba(0,0,0,0.25); margin-bottom:4px;
+        }
+        .page-header .sub { font-size:0.88rem; color:rgba(255,255,255,0.75); }
+
+        /* Secciones */
+        .seccion {
+            background:white; border-radius:18px; padding:24px;
+            margin-bottom:20px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.12);
+            animation: cardIn 0.4s ease both;
+        }
+        @keyframes cardIn { from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);} }
+
+        .seccion-titulo {
+            display:flex; align-items:center; gap:10px;
+            font-size:1rem; font-weight:800; margin-bottom:18px;
+            padding-bottom:12px; border-bottom:2px solid #EEF2F7;
+        }
+        .seccion-titulo .icono {
+            width:36px; height:36px; border-radius:10px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:1rem; flex-shrink:0;
+        }
+        .icono.azul   { background:#E3F2FD; color:#1565C0; }
+        .icono.morado { background:#F3E5F5; color:#7B1FA2; }
+        .icono.naranja{ background:#FFF3E0; color:#E65100; }
+        .icono.verde  { background:#E8F5E9; color:#2E7D32; }
+
+        /* Form */
+        .form-row {
+            display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr));
+            gap:14px; margin-bottom:14px;
+        }
+        .form-group { display:flex; flex-direction:column; gap:5px; }
+        .form-group label {
+            font-size:0.78rem; font-weight:700; color:#607D8B;
+            text-transform:uppercase; letter-spacing:0.5px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding:10px 14px; border:1.5px solid #E8EDF2; border-radius:10px;
+            font-family:'Outfit',sans-serif; font-size:0.95rem; color:#1A2332;
+            transition:all 0.2s ease; background:white;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color:#1565C0; outline:none;
+            box-shadow:0 0 0 3px rgba(21,101,192,0.12);
+        }
+        .form-group input[readonly] {
+            background:#F8FAFF; color:#1565C0; font-weight:700;
+        }
+
+        /* Requerimientos */
+        .req-grid {
+            display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+        }
+        .req-item {
+            display:flex; align-items:center; gap:8px;
+            padding:10px 12px; border-radius:10px;
+            border:1.5px solid #E8EDF2; cursor:pointer;
+            transition:all 0.2s; font-size:0.85rem; font-weight:600; color:#607D8B;
+        }
+        .req-item:has(input:checked) {
+            background:#E3F2FD; border-color:#1565C0; color:#1565C0;
+        }
+        .req-item input { accent-color:#1565C0; width:15px; height:15px; }
+        .req-item.siempre {
+            background:#E8F5E9; border-color:#A5D6A7; color:#2E7D32;
+            cursor:not-allowed; opacity:0.85;
+        }
+
+        /* Upload */
+        .upload-area {
+            border:2px dashed #90CAF9; border-radius:14px;
+            padding:30px; text-align:center; cursor:pointer;
+            transition:all 0.3s ease; background:#F8FAFF;
+        }
+        .upload-area:hover { background:#E3F2FD; border-color:#1565C0; }
+        .upload-area.has-image { border-style:solid; border-color:#2E7D32; background:#F1FFF3; }
+        .image-preview { max-width:100%; max-height:250px; border-radius:10px; margin-top:12px; }
+
+        /* Tablas tallas */
+        .tabla-tallas { width:100%; border-collapse:collapse; margin-top:12px; }
+        .tabla-tallas th, .tabla-tallas td {
+            border:1.5px solid #E3F2FD; padding:10px 6px; text-align:center;
+        }
+        .tabla-tallas th {
+            background:#1565C0; color:white; font-weight:700; font-size:0.82rem;
+        }
+        .tabla-tallas input {
+            width:55px; text-align:center; border:1.5px solid #E8EDF2;
+            padding:6px 4px; border-radius:8px; font-size:0.95rem; font-weight:600;
+            font-family:'Outfit',sans-serif;
+        }
+        .tabla-tallas input:focus { border-color:#1565C0; outline:none; }
+        .tabla-tallas .total-cell {
+            background:#E3F2FD; font-weight:800; color:#1565C0; font-size:1.1rem;
+        }
+
+        /* Botones */
+        .btn-submit {
+            width:100%; padding:16px; border:none; border-radius:14px;
+            background:linear-gradient(135deg,#0D47A1,#1976D2); color:white;
+            font-family:'Outfit',sans-serif; font-size:1rem; font-weight:700;
+            cursor:pointer; transition:all 0.25s ease;
+            box-shadow:0 6px 20px rgba(13,71,161,0.35);
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        .btn-submit:hover { transform:translateY(-2px); filter:brightness(1.08); }
+
+        .btn-limpiar {
+            padding:14px 24px; border:1.5px solid #E8EDF2; border-radius:14px;
+            background:white; color:#607D8B; font-family:'Outfit',sans-serif;
+            font-size:0.9rem; font-weight:600; cursor:pointer; transition:all 0.25s;
+        }
+        .btn-limpiar:hover { background:#EEF2F7; }
+
+        /* Nav footer */
+        .nav-bottom {
+            display:flex; gap:10px; justify-content:center;
+            flex-wrap:wrap; margin-top:20px;
+        }
+        .btn-nav {
+            display:inline-flex; align-items:center; gap:7px;
+            padding:10px 18px; border:none; border-radius:10px;
+            font-family:'Outfit',sans-serif; font-size:0.88rem; font-weight:600;
+            cursor:pointer; transition:all 0.25s; text-decoration:none;
+        }
+        .btn-nav.primary   { background:linear-gradient(135deg,#0D47A1,#1976D2); color:white; }
+        .btn-nav.success   { background:linear-gradient(135deg,#1B5E20,#2E7D32); color:white; }
+        .btn-nav.secondary { background:#607D8B; color:white; }
+        .btn-nav:hover { transform:translateY(-2px); filter:brightness(1.08); }
+
+        /* Notificaciones */
+        .notification {
+            position:fixed; top:20px; right:20px; padding:14px 22px;
+            border-radius:12px; color:white; font-weight:600;
+            font-family:'Outfit',sans-serif;
+            box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999;
+            animation:slideIn 0.3s ease; max-width:340px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .notification.success { background:linear-gradient(135deg,#2E7D32,#43A047); }
+        .notification.error   { background:linear-gradient(135deg,#B71C1C,#E53935); }
+        .notification.info    { background:linear-gradient(135deg,#0D47A1,#1976D2); }
+        .notification.warning { background:linear-gradient(135deg,#E65100,#F57C00); }
+        @keyframes slideIn  { from{transform:translateX(110%);opacity:0;} to{transform:translateX(0);opacity:1;} }
+        @keyframes slideOut { from{transform:translateX(0);opacity:1;} to{transform:translateX(110%);opacity:0;} }
+
+        @media(max-width:600px){
+            .req-grid { grid-template-columns:repeat(2,1fr); }
+            .form-row { grid-template-columns:1fr; }
+            
+            #seccion-tallas-infantil,
+            #seccion-tallas-adulto,
+            #seccion-pantalon-mujer,
+            #seccion-pantalon-hombre,
+            #seccion-pantalonetas,
+            #seccion-pijamas,
+            #seccion-sudaderas,
+            #seccion-chaquetas {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #seccion-tallas-infantil table,
+            #seccion-tallas-adulto table,
+            #seccion-pantalon-mujer table,
+            #seccion-pantalon-hombre table,
+            #seccion-pantalonetas table,
+            #seccion-pijamas table,
+            #seccion-sudaderas table,
+            #seccion-chaquetas table {
+                min-width: 480px;
+            }
+
+            .tabla-tallas input {
+                width: 40px;
+                padding: 5px 2px;
+                font-size: 0.85rem;
+            }
+
+            .tabla-tallas th, .tabla-tallas td {
+                padding: 8px 4px;
+                font-size: 0.8rem;
+            }
+
+            body { padding: 14px 10px 50px; }
+            .page-header h1 { font-size: 1.5rem; }
+        }
+
+        input, textarea, select {
+            caret-color: #1565C0;
+            cursor: text;
+        }
+
+        input::selection, textarea::selection {
+            background: #BBDEFB;
+            color: #1A2332;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="wrapper">
+
+        <div class="page-header">
+            <div class="logo-wrap">
+                <img src="logo.png" alt="REG" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                <i class="fas fa-industry"></i>
+            </div>
+            <h1>REG MARKETING</h1>
+            <p class="sub">Crear Orden de Producción</p>
+        </div>
+
+        <form id="ordenForm">
+
+            <!-- INFORMACIÓN DEL CLIENTE -->
+            <div class="seccion">
+                <div class="seccion-titulo">
+                    <div class="icono azul"><i class="fas fa-user"></i></div>
+                    <span style="color:#1565C0;">Información del Cliente</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Número de Orden *</label>
+                        <input type="text" id="numeroOrden" required placeholder="Auto">
+                    </div>
+                    <div class="form-group">
+                        <label>Cliente *</label>
+                        <input type="text" id="cliente" required placeholder="Nombre del cliente">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Pedido *</label>
+                        <input type="date" id="fechaPedido" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Arte / Diseño *</label>
+                        <input type="text" id="arte" required placeholder="Nombre del diseño">
+                    </div>
+                    <div class="form-group">
+                        <label>Impresora</label>
+                        <select id="impresora">
+                            <option value="">Seleccionar...</option>
+                            <option value="EPSON">EPSON</option>
+                            <option value="KAROLG">KAROLG</option>
+                            <option value="GRAFTECK">GRAFTECK</option>
+                            <option value="OTRA">OTRA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="color:#C62828;">Fecha Entrega *</label>
+                        <input type="date" id="fechaEntrega" required style="border-color:#FFCDD2;">
+                    </div>
+                </div>
+
+                <!-- REQUERIMIENTOS -->
+                <div style="margin-top:6px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:#607D8B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">
+                        <i class="fas fa-tasks"></i> Requerimientos
+                    </div>
+                    <div class="req-grid">
+                        <label class="req-item"><input type="checkbox" id="reqCorte"> Corte</label>
+                        <label class="req-item"><input type="checkbox" id="reqImpresion"> Impresión</label>
+                        <label class="req-item"><input type="checkbox" id="reqSublimacion"> Sublimación</label>
+                        <label class="req-item"><input type="checkbox" id="reqEstampado"> Estampado</label>
+                        <label class="req-item"><input type="checkbox" id="reqConfeccion"> Confección</label>
+                        <label class="req-item"><input type="checkbox" id="reqDTF"> DTF</label>
+                        <label class="req-item"><input type="checkbox" id="reqCorteLaser"> Corte Láser</label>
+                        <label class="req-item siempre">
+                            <input type="checkbox" id="reqDespacho" checked style="pointer-events:none;"> 
+                            Despacho <span style="font-size:0.7rem;margin-left:2px;">(siempre)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ESPECIFICACIONES TÉCNICAS -->
+            <div class="seccion">
+                <div class="seccion-titulo">
+                    <div class="icono morado"><i class="fas fa-cog"></i></div>
+                    <span style="color:#7B1FA2;">Especificaciones Técnicas</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Prenda *</label>
+                        <select id="tipoPrenda" required onchange="actualizarCamposPorTipoPrenda()">
+                            <option value="">Seleccionar...</option>
+                            <optgroup label="Prendas con Tallas Completas">
+                                <option value="Camiseta">Camiseta</option>
+                                <option value="Camiseta Polo">Camiseta Tipo Polo</option>
+                                <option value="Blusa">Blusa</option>
+                                <option value="Camisa Manga Corta">Camisa Manga Corta</option>
+                                <option value="Camisa Manga Larga">Camisa Manga Larga</option>
+                                <option value="Pijama">Pijama</option>
+                                <option value="Chaqueta">Chaqueta</option>
+                            </optgroup>
+                            <optgroup label="Pantalones">
+                                <option value="Pantaloneta">Pantaloneta</option>
+                                <option value="Jeans">Jeans</option>
+                                <option value="Sudadera">Sudadera</option>
+                                <option value="Jogger">Jogger</option>
+                            </optgroup>
+                            <optgroup label="Accesorios (Cantidad Manual)">
+                                <option value="Totebag">Totebag</option>
+                                <option value="Tula">Tula</option>
+                                <option value="Mochila">Mochila</option>
+                                <option value="Gorra">Gorra</option>
+                                <option value="Toalla">Toalla</option>
+                                <option value="Manga">Manga</option>
+                                <option value="Delantal">Delantal</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group" id="campo-tela">
+                        <label>Tela</label>
+                        <select id="tela" onchange="toggleOtraTela()">
+                            <option value="">Seleccionar...</option>
+                            <option value="PIEL-DURAZNO">PIEL DURAZNO</option>
+                            <option value="SUDAFRICA">SUDAFRICA</option>
+                            <option value="Otra">Otra</option>
+                        </select>
+                        <input type="text" id="telaOtra" placeholder="Especifica la tela..."
+                            style="display:none;margin-top:6px;">
+                    </div>
+                </div>
+
+                <div class="form-row" id="campo-ancho-molde">
+                    <div class="form-group" id="campo-ancho">
+                        <label>Ancho</label>
+                        <input type="text" id="ancho" placeholder="Ej: 1.50m">
+                    </div>
+                    <div class="form-group" id="campo-molde">
+                        <label>Molde</label>
+                        <select id="molde">
+                            <option value="">Seleccionar...</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Encogimiento">Encogimiento</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row" id="campo-cuello-anchoBies">
+                    <div class="form-group" id="campo-cuello">
+                        <label>Cuello</label>
+                        <select id="cuello">
+                            <option value="">Seleccionar...</option>
+                            <option value="Redondo">Redondo</option>
+                            <option value="V">En V</option>
+                            <option value="Sublimado">Sublimado</option>
+                            <option value="Polo">Polo</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="campo-anchoBies">
+                        <label>Ancho Bies</label>
+                        <input type="text" id="anchoBies" placeholder="Ej: 3cm">
+                    </div>
+                </div>
+
+                <div class="form-row" id="campo-dobladillo-colorCuello">
+                    <div class="form-group" id="campo-dobladillo">
+                        <label>Dobladillo</label>
+                        <select id="dobladillo">
+                            <option value="">Seleccionar...</option>
+                            <option value="En Manga">En Manga</option>
+                            <option value="En Bies">En Bies</option>
+                            <option value="Ambos">Ambos (Manga y Bies)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="campo-colorCuello">
+                        <label>Color de Cuello</label>
+                        <input type="text" id="colorCuello" placeholder="Ej: Blanco">
+                    </div>
+                </div>
+
+                <div class="form-row" id="campo-marquilla-vacio">
+                    <div class="form-group" id="campo-marquilla">
+                        <label>Marquilla</label>
+                        <select id="marquilla">
+                            <option value="">Seleccionar...</option>
+                            <option value="OTRO">OTRO</option>
+                            <option value="REG">SCHUSTER</option>
+                            <option value="Sin marquilla">Sin marquilla</option>
+                        </select>
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+            </div>
+
+            <!-- DISEÑO -->
+            <div class="seccion">
+                <div class="seccion-titulo">
+                    <div class="icono naranja"><i class="fas fa-image"></i></div>
+                    <span style="color:#E65100;">Diseño del Producto</span>
+                </div>
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('imagenProducto').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:2.5rem;color:#90CAF9;margin-bottom:12px;display:block;"></i>
+                    <p style="font-size:1rem;color:#607D8B;font-weight:600;">Click para subir imagen del diseño</p>
+                    <p style="font-size:0.82rem;color:#90A4AE;margin-top:4px;">JPG, PNG, GIF (máx 50MB)</p>
+                    <input type="file" id="imagenProducto" accept="image/*" style="display:none;">
+                    <div id="imagePreview"></div>
+                </div>
+            </div>
+
+            <!-- LOGOS DEL DISEÑO -->
+            <div class="seccion">
+                <div class="seccion-titulo">
+                    <div class="icono naranja"><i class="fas fa-layer-group"></i></div>
+                    <span style="color:#E65100;">Logos del Diseño <span style="font-size:0.78rem;color:#90A4AE;font-weight:400;">(opcional)</span></span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+                    <div>
+                        <p style="font-size:0.78rem;font-weight:700;color:#607D8B;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-hand-point-right" style="color:#E65100;"></i> Manga Derecha</p>
+                        <div class="upload-area" id="uploadMangaDerecha" onclick="document.getElementById('inputMangaDerecha').click()" style="padding:16px;">
+                            <i class="fas fa-plus-circle" style="font-size:1.8rem;color:#90CAF9;display:block;margin-bottom:6px;"></i>
+                            <p style="font-size:0.82rem;color:#90A4AE;">Subir imagen</p>
+                            <input type="file" id="inputMangaDerecha" accept="image/*" style="display:none;">
+                            <div id="previewMangaDerecha"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p style="font-size:0.78rem;font-weight:700;color:#607D8B;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-hand-point-left" style="color:#E65100;"></i> Manga Izquierda</p>
+                        <div class="upload-area" id="uploadMangaIzquierda" onclick="document.getElementById('inputMangaIzquierda').click()" style="padding:16px;">
+                            <i class="fas fa-plus-circle" style="font-size:1.8rem;color:#90CAF9;display:block;margin-bottom:6px;"></i>
+                            <p style="font-size:0.82rem;color:#90A4AE;">Subir imagen</p>
+                            <input type="file" id="inputMangaIzquierda" accept="image/*" style="display:none;">
+                            <div id="previewMangaIzquierda"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p style="font-size:0.78rem;font-weight:700;color:#607D8B;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-tshirt" style="color:#E65100;"></i> Frente</p>
+                        <div class="upload-area" id="uploadFrente" onclick="document.getElementById('inputFrente').click()" style="padding:16px;">
+                            <i class="fas fa-plus-circle" style="font-size:1.8rem;color:#90CAF9;display:block;margin-bottom:6px;"></i>
+                            <p style="font-size:0.82rem;color:#90A4AE;">Subir imagen</p>
+                            <input type="file" id="inputFrente" accept="image/*" style="display:none;">
+                            <div id="previewFrente"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p style="font-size:0.78rem;font-weight:700;color:#607D8B;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-arrow-down" style="color:#E65100;"></i> Espalda</p>
+                        <div class="upload-area" id="uploadEspalda" onclick="document.getElementById('inputEspalda').click()" style="padding:16px;">
+                            <i class="fas fa-plus-circle" style="font-size:1.8rem;color:#90CAF9;display:block;margin-bottom:6px;"></i>
+                            <p style="font-size:0.82rem;color:#90A4AE;">Subir imagen</p>
+                            <input type="file" id="inputEspalda" accept="image/*" style="display:none;">
+                            <div id="previewEspalda"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Logos adicionales -->
+                <div style="margin-top:14px;">
+                    <p style="font-size:0.78rem;font-weight:700;color:#607D8B;text-transform:uppercase;margin-bottom:8px;"><i class="fas fa-images" style="color:#E65100;"></i> Logos Adicionales <span style="font-weight:400;color:#90A4AE;">(máx 4)</span></p>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="gridLogosAdicionales">
+                        <!-- Se generan dinámicamente -->
+                    </div>
+                    <button type="button" onclick="agregarLogoAdicional()" id="btnAgregarLogo"
+                        style="margin-top:10px;padding:8px 16px;border:1.5px dashed #90CAF9;border-radius:10px;background:transparent;color:#1565C0;font-family:'Outfit',sans-serif;font-weight:600;cursor:pointer;font-size:0.85rem;">
+                        <i class="fas fa-plus"></i> Agregar logo adicional
+                    </button>
+                </div>
+            </div>
+
+            <!-- TALLAS -->
+            <div class="seccion" id="seccion-tallas-completa">
+                <div class="seccion-titulo">
+                    <div class="icono verde"><i class="fas fa-ruler"></i></div>
+                    <span style="color:#2E7D32;">Cantidades por Talla</span>
+                </div>
+
+                <div id="seccion-tallas-infantil">
+                    <p style="font-size:0.82rem;font-weight:700;color:#607D8B;margin-bottom:8px;">TALLAS INFANTIL</p>
+                    <table class="tabla-tallas">
+                        <thead><tr>
+                            <th>2T</th><th>3T</th><th>4T</th><th>5T</th>
+                            <th>2</th><th>4</th><th>6</th><th>8</th>
+                            <th>10</th><th>12</th><th>14</th><th>16</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="talla2T" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla3T" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla4T" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla5T" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla2" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla4" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla6" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla8" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla10" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla12" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla14" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla16" min="0" value="0" class="talla-input"></td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <div id="seccion-tallas-adulto" style="margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#607D8B;margin-bottom:8px;">TALLAS ADULTO</p>
+                    <table class="tabla-tallas">
+                        <thead><tr>
+                            <th>XS</th><th>S</th><th>M</th><th>L</th>
+                            <th>XL</th><th>2XL</th><th>3XL</th><th>4XL</th>
+                            <th style="background:#0D47A1;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaXS" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaS" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaM" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaXL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla2XL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla3XL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="talla4XL" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalPrendas">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- PANTALÓN MUJER -->
+                <div id="seccion-pantalon-mujer" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#E91E63;margin-bottom:8px;">PANTALÓN MUJER</p>
+                    <table class="tabla-tallas">
+                        <thead><tr style="background:#E91E63;">
+                            <th>4</th><th>6</th><th>8</th><th>10</th><th>12</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaPM4" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM6" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM8" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM10" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM12" min="0" value="0" class="talla-input"></td>
+                        </tr></tbody>
+                    </table>
+                    <table class="tabla-tallas" style="margin-top:8px;">
+                        <thead><tr style="background:#E91E63;">
+                            <th>14</th><th>16</th><th>18</th><th>20</th><th>22</th>
+                            <th style="background:#C2185B;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaPM14" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM16" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM18" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM20" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPM22" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalPantalonMujer">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- PANTALÓN HOMBRE -->
+                <div id="seccion-pantalon-hombre" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#1565C0;margin-bottom:8px;">PANTALÓN HOMBRE</p>
+                    <table class="tabla-tallas">
+                        <thead><tr>
+                            <th>26</th><th>28</th><th>30</th><th>32</th><th>34</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaPH26" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH28" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH30" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH32" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH34" min="0" value="0" class="talla-input"></td>
+                        </tr></tbody>
+                    </table>
+                    <table class="tabla-tallas" style="margin-top:8px;">
+                        <thead><tr>
+                            <th>36</th><th>38</th><th>40</th><th>42</th><th>44</th>
+                            <th style="background:#0D47A1;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaPH36" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH38" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH40" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH42" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPH44" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalPantalonHombre">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- PANTALONETAS -->
+                <div id="seccion-pantalonetas" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#E65100;margin-bottom:8px;">PANTALONETAS</p>
+                    <table class="tabla-tallas">
+                        <thead><tr style="background:#E65100;">
+                            <th>S</th><th>M</th><th>L</th><th>XL</th>
+                            <th style="background:#BF360C;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaPTS" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPTM" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPTL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPTXL" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalPantalonetas">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- PIJAMAS -->
+                <div id="seccion-pijamas" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#7B1FA2;margin-bottom:8px;">PIJAMAS</p>
+                    <table class="tabla-tallas">
+                        <thead><tr style="background:#7B1FA2;">
+                            <th>S</th><th>M</th><th>L</th><th>XL</th>
+                            <th style="background:#4A148C;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaPJS" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPJM" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPJL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaPJXL" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalPijamas">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- SUDADERAS -->
+                <div id="seccion-sudaderas" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#607D8B;margin-bottom:8px;">SUDADERAS / JOGGERS</p>
+                    <table class="tabla-tallas">
+                        <thead><tr style="background:#607D8B;">
+                            <th>S</th><th>M</th><th>L</th><th>XL</th>
+                            <th style="background:#455A64;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaSD_S" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaSD_M" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaSD_L" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaSD_XL" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalSudaderas">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- CHAQUETAS -->
+                <div id="seccion-chaquetas" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#795548;margin-bottom:8px;">CHAQUETAS</p>
+                    <table class="tabla-tallas">
+                        <thead><tr style="background:#795548;">
+                            <th>S</th><th>M</th><th>L</th><th>XL</th>
+                            <th style="background:#4E342E;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaCHS" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaCHM" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaCHL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaCHXL" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalChaquetas">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CANTIDAD MANUAL -->
+            <div id="seccion-cantidad-manual" style="display:none;" class="seccion">
+                <div class="seccion-titulo">
+                    <div class="icono verde"><i class="fas fa-calculator"></i></div>
+                    <span style="color:#2E7D32;">Cantidad Total</span>
+                </div>
+                <div class="form-group" style="max-width:300px;">
+                    <label>Cantidad de Unidades *</label>
+                    <input type="number" id="cantidadManual" min="1" placeholder="Ej: 200"
+                        style="font-size:1.3rem;font-weight:700;text-align:center;">
+                </div>
+            </div>
+
+            <!-- OBSERVACIONES -->
+            <div class="seccion">
+                <div class="seccion-titulo">
+                    <div class="icono azul"><i class="fas fa-sticky-note"></i></div>
+                    <span style="color:#1565C0;">Observaciones</span>
+                </div>
+                <div class="form-group">
+                    <textarea id="observaciones" rows="3"
+                        placeholder="Características especiales, detalles importantes..."
+                        style="resize:vertical;"></textarea>
+                </div>
+            </div>
+
+            <!-- BOTONES -->
+            <div style="display:flex;gap:12px;align-items:center;">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Crear Orden de Producción
+                </button>
+                <button type="button" class="btn-limpiar" onclick="limpiarFormulario()">
+                    <i class="fas fa-eraser"></i> Limpiar
+                </button>
+            </div>
+
+        </form>
+
+        <!-- NAV -->
+        <div class="nav-bottom">
+            <a href="dashboard-jefe.html" class="btn-nav primary">
+                <i class="fas fa-tv"></i> Dashboard
+            </a>
+            <a href="tablet-areas.html" class="btn-nav success">
+                <i class="fas fa-tablet-alt"></i> Tablets
+            </a>
+            <a href="inicio.html" class="btn-nav secondary">
+                <i class="fas fa-home"></i> Inicio
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        let imagenBase64 = null;    
+        let imagenMangaDerecha = null;
+        let imagenMangaIzquierda = null;
+        let imagenFrente = null;
+        let imagenEspalda = null;
+        let imagenesAdicionales = [];
+
+        function procesarImagenLogo(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const max = 800;
+                    if (w > max || h > max) {
+                        if (w > h) { h = Math.round(h * max / w); w = max; }
+                        else { w = Math.round(w * max / h); h = max; }
+                    }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    callback(canvas.toDataURL('image/jpeg', 0.75));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function bindLogoInput(inputId, uploadAreaId, previewId, varSetter) {
+            document.getElementById(inputId).addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                procesarImagenLogo(file, function(b64) {
+                    varSetter(b64);
+                    const area = document.getElementById(uploadAreaId);
+                    area.classList.add('has-image');
+                    document.getElementById(previewId).innerHTML = `
+                        <img src="${b64}" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:8px;">
+                        <p style="font-size:0.75rem;color:#4CAF50;margin-top:4px;font-weight:600;">
+                            <i class="fas fa-check-circle"></i> Cargada
+                            <span style="color:#E53935;cursor:pointer;margin-left:8px;" onclick="quitarLogo('${uploadAreaId}','${previewId}','${inputId}',null)">
+                                <i class="fas fa-times"></i> Quitar
+                            </span>
+                        </p>`;
+                });
+            });
+        }
+
+        function quitarLogo(uploadAreaId, previewId, inputId, idx) {
+            if (idx !== null) {
+                imagenesAdicionales[idx] = null;
+            } else {
+                if (uploadAreaId === 'uploadMangaDerecha') imagenMangaDerecha = null;
+                else if (uploadAreaId === 'uploadMangaIzquierda') imagenMangaIzquierda = null;
+                else if (uploadAreaId === 'uploadFrente') imagenFrente = null;
+                else if (uploadAreaId === 'uploadEspalda') imagenEspalda = null;
+            }
+            document.getElementById(uploadAreaId).classList.remove('has-image');
+            document.getElementById(previewId).innerHTML = '';
+            document.getElementById(inputId).value = '';
+        }
+
+        let contadorLogosAdicionales = 0;
+        function agregarLogoAdicional() {
+            if (contadorLogosAdicionales >= 4) return;
+            const idx = contadorLogosAdicionales++;
+            imagenesAdicionales.push(null);
+            const grid = document.getElementById('gridLogosAdicionales');
+            const div = document.createElement('div');
+            div.id = `wrapLogo${idx}`;
+            div.innerHTML = `
+                <div class="upload-area" id="uploadAdicional${idx}" onclick="document.getElementById('inputAdicional${idx}').click()" style="padding:12px;">
+                    <i class="fas fa-plus-circle" style="font-size:1.4rem;color:#90CAF9;display:block;margin-bottom:4px;"></i>
+                    <p style="font-size:0.75rem;color:#90A4AE;">Logo ${idx+1}</p>
+                    <input type="file" id="inputAdicional${idx}" accept="image/*" style="display:none;">
+                    <div id="previewAdicional${idx}"></div>
+                </div>`;
+            grid.appendChild(div);
+
+            document.getElementById(`inputAdicional${idx}`).addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                procesarImagenLogo(file, function(b64) {
+                    imagenesAdicionales[idx] = b64;
+                    const area = document.getElementById(`uploadAdicional${idx}`);
+                    area.classList.add('has-image');
+                    document.getElementById(`previewAdicional${idx}`).innerHTML = `
+                        <img src="${b64}" style="max-width:100%;max-height:80px;border-radius:6px;margin-top:6px;">
+                        <p style="font-size:0.7rem;color:#4CAF50;margin-top:2px;font-weight:600;">
+                            <i class="fas fa-check-circle"></i> OK
+                            <span style="color:#E53935;cursor:pointer;margin-left:6px;" 
+                                onclick="quitarLogo('uploadAdicional${idx}','previewAdicional${idx}','inputAdicional${idx}',${idx})">
+                                <i class="fas fa-times"></i>
+                            </span>
+                        </p>`;
+                });
+            });
+
+            if (contadorLogosAdicionales >= 4) {
+                document.getElementById('btnAgregarLogo').style.display = 'none';
+            }
+        }
+
+        // Inicializar bindings al cargar
+        window.addEventListener('DOMContentLoaded', function() {
+            bindLogoInput('inputMangaDerecha',   'uploadMangaDerecha',   'previewMangaDerecha',   v => imagenMangaDerecha   = v);
+            bindLogoInput('inputMangaIzquierda', 'uploadMangaIzquierda', 'previewMangaIzquierda', v => imagenMangaIzquierda = v);
+            bindLogoInput('inputFrente',         'uploadFrente',         'previewFrente',         v => imagenFrente         = v);
+            bindLogoInput('inputEspalda',        'uploadEspalda',        'previewEspalda',        v => imagenEspalda        = v);
+        });
+        // Calcular total de prendas
+        document.querySelectorAll('.talla-input').forEach(input => {
+            input.addEventListener('input', calcularTotal);
+        });
+                // Verificar si estamos editando
+        const urlParams = new URLSearchParams(window.location.search);
+        const numeroOrdenEditar = urlParams.get('editar');
+
+        if (numeroOrdenEditar) {
+            window.addEventListener('DOMContentLoaded', async function() {
+                // Buscar en Supabase primero
+                let orden = null;
+                try {
+                    const ordenes = await window.DB.obtenerOrdenes();
+                    orden = ordenes.find(o => o.numeroOrden === numeroOrdenEditar);
+                } catch(e) {}
+
+                // Fallback localStorage
+                if (!orden) {
+                    const ordenesLocal = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                    orden = ordenesLocal.find(o => o.numeroOrden === numeroOrdenEditar);
+                }
+
+                if (orden) {
+                    // Campos básicos
+                    document.getElementById('numeroOrden').value = orden.numeroOrden;
+                    document.getElementById('numeroOrden').readOnly = true;
+                    document.getElementById('cliente').value = orden.cliente;
+                    document.getElementById('fechaPedido').value = orden.fechaPedido;
+                    document.getElementById('fechaEntrega').value = orden.fechaEntrega;
+                    document.getElementById('arte').value = orden.arte || '';
+                    document.getElementById('impresora').value = orden.impresora || '';
+                    document.getElementById('observaciones').value = orden.observaciones || '';
+
+                    // Tipo de prenda — llamar actualizarCamposPorTipoPrenda para que aparezcan los campos correctos
+                    document.getElementById('tipoPrenda').value = orden.tipoPrenda;
+                    actualizarCamposPorTipoPrenda();
+
+                    // Campos técnicos (después de que aparezcan)
+                    document.getElementById('tela').value = orden.tela || '';
+                    document.getElementById('cuello').value = orden.cuello || '';
+                    document.getElementById('colorCuello').value = orden.colorCuello || '';
+                    document.getElementById('marquilla').value = orden.marquilla || '';
+                    document.getElementById('ancho').value = orden.ancho || '';
+                    document.getElementById('molde').value = orden.molde || '';
+                    document.getElementById('anchoBies').value = orden.anchoBies || '';
+                    document.getElementById('dobladillo').value = orden.dobladillo || '';
+
+                    // Requerimientos
+                    document.getElementById('reqCorte').checked      = orden.requerimientos?.corte      || false;
+                    document.getElementById('reqImpresion').checked  = orden.requerimientos?.impresion  || false;
+                    document.getElementById('reqSublimacion').checked= orden.requerimientos?.sublimacion|| false;
+                    document.getElementById('reqEstampado').checked  = orden.requerimientos?.estampado  || false;
+                    document.getElementById('reqConfeccion').checked = orden.requerimientos?.confeccion || false;
+                    document.getElementById('reqDTF').checked        = orden.requerimientos?.dtf        || false;
+                    document.getElementById('reqCorteLaser').checked = orden.requerimientos?.corteLaser || false;
+                    document.getElementById('reqDespacho').checked   = orden.requerimientos?.despacho   || false;
+
+                    // Cantidad manual o tallas
+                    const config = configuracionPrendas[orden.tipoPrenda];
+                    if (config?.cantidadManual) {
+                        document.getElementById('cantidadManual').value = orden.cantidadTotal || '';
+                    } else {
+                        // Mapa de talla → id del input
+                        const mapaIds = {
+                            '2T':'talla2T','3T':'talla3T','4T':'talla4T','5T':'talla5T',
+                            '2':'talla2','4':'talla4','6':'talla6','8':'talla8',
+                            '10':'talla10','12':'talla12','14':'talla14','16':'talla16',
+                            'XS':'tallaXS','S':'tallaS','M':'tallaM','L':'tallaL',
+                            'XL':'tallaXL','2XL':'talla2XL','3XL':'talla3XL','4XL':'talla4XL',
+                            'PM-4':'tallaPM4','PM-6':'tallaPM6','PM-8':'tallaPM8','PM-10':'tallaPM10',
+                            'PM-12':'tallaPM12','PM-14':'tallaPM14','PM-16':'tallaPM16',
+                            'PM-18':'tallaPM18','PM-20':'tallaPM20','PM-22':'tallaPM22',
+                            'PH-26':'tallaPH26','PH-28':'tallaPH28','PH-30':'tallaPH30',
+                            'PH-32':'tallaPH32','PH-34':'tallaPH34','PH-36':'tallaPH36',
+                            'PH-38':'tallaPH38','PH-40':'tallaPH40','PH-42':'tallaPH42','PH-44':'tallaPH44',
+                            'PT-S':'tallaPTS','PT-M':'tallaPTM','PT-L':'tallaPTL','PT-XL':'tallaPTXL',
+                            'PJ-S':'tallaPJS','PJ-M':'tallaPJM','PJ-L':'tallaPJL','PJ-XL':'tallaPJXL',
+                            'SD-S':'tallaSD_S','SD-M':'tallaSD_M','SD-L':'tallaSD_L','SD-XL':'tallaSD_XL',
+                            'CH-S':'tallaCHS','CH-M':'tallaCHM','CH-L':'tallaCHL','CH-XL':'tallaCHXL'
+                        };
+
+                        Object.entries(orden.tallas || {}).forEach(([talla, cantidad]) => {
+                            const inputId = mapaIds[talla];
+                            const input = inputId ? document.getElementById(inputId) : null;
+                            if (input) input.value = cantidad || 0;
+                        });
+
+                        calcularTotal();
+                    }
+
+                    // Imagen
+                    if (orden.imagenDiseno) {
+                        imagenBase64 = orden.imagenDiseno;
+                        document.getElementById('uploadArea').classList.add('has-image');
+                        document.getElementById('imagePreview').innerHTML = `
+                            <img src="${imagenBase64}" class="image-preview" alt="Preview">
+                            <p style="margin-top:10px;color:#4CAF50;font-weight:600;">
+                                <i class="fas fa-check-circle"></i> Imagen cargada
+                            </p>`;
+                    }
+
+                    // Botón
+                    document.querySelector('button[type="submit"]').innerHTML =
+                        '<i class="fas fa-save"></i> Actualizar Orden';
+
+                    // Notificación
+                    setTimeout(() => {
+                        const notif = document.createElement('div');
+                        notif.className = 'notification info';
+                        notif.textContent = `📝 Editando orden ${numeroOrdenEditar}`;
+                        document.body.appendChild(notif);
+                        setTimeout(() => { notif.style.animation='slideOut 0.3s ease'; setTimeout(()=>notif.remove(),300); }, 3000);
+                    }, 500);
+                }
+            });
+        }
+
+        if (!numeroOrdenEditar) {
+            window.addEventListener('DOMContentLoaded', async function() {
+                try {
+                    const siguiente = await window.DB.obtenerSiguienteNumeroOrden();
+                    if (siguiente) {
+                        document.getElementById('numeroOrden').value = siguiente;
+                        document.getElementById('numeroOrden').readOnly = true;
+                    }
+                } catch(e) {
+                    console.log('No se pudo obtener número automático');
+                }
+            });
+        }
+            function calcularTotal() {
+                // Total general Infantil + Adulto
+                let totalInfantilAdulto = 0;
+                ['2T', '3T', '4T', '5T', '2', '4', '6', '8', '10', '12', '14', '16', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalInfantilAdulto += parseInt(input.value) || 0;
+                });
+                
+                // Total Pantalón Mujer
+                let totalPantalonMujer = 0;
+                ['PM4', 'PM6', 'PM8', 'PM10', 'PM12', 'PM14', 'PM16', 'PM18', 'PM20', 'PM22'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalPantalonMujer += parseInt(input.value) || 0;
+                });
+                
+                // Total Pantalón Hombre
+                let totalPantalonHombre = 0;
+                ['PH26', 'PH28', 'PH30', 'PH32', 'PH34', 'PH36', 'PH38', 'PH40', 'PH42', 'PH44'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalPantalonHombre += parseInt(input.value) || 0;
+                });
+                
+                // Total Pantalonetas
+                let totalPantalonetas = 0;
+                ['PTS', 'PTM', 'PTL', 'PTXL'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalPantalonetas += parseInt(input.value) || 0;
+                });
+                
+                // Total Pijamas
+                let totalPijamas = 0;
+                ['PJS', 'PJM', 'PJL', 'PJXL'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalPijamas += parseInt(input.value) || 0;
+                });
+                
+                // Total Sudaderas
+                let totalSudaderas = 0;
+                ['SD_S', 'SD_M', 'SD_L', 'SD_XL'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalSudaderas += parseInt(input.value) || 0;
+                });
+                
+                // Total Chaquetas
+                let totalChaquetas = 0;
+                ['CHS', 'CHM', 'CHL', 'CHXL'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalChaquetas += parseInt(input.value) || 0;
+                });
+                
+                // Actualizar displays
+                const elemTotal = document.getElementById('totalPrendas');
+                if (elemTotal) elemTotal.textContent = totalInfantilAdulto;
+                
+                const elemPM = document.getElementById('totalPantalonMujer');
+                if (elemPM) elemPM.textContent = totalPantalonMujer;
+                
+                const elemPH = document.getElementById('totalPantalonHombre');
+                if (elemPH) elemPH.textContent = totalPantalonHombre;
+                
+                const elemPT = document.getElementById('totalPantalonetas');
+                if (elemPT) elemPT.textContent = totalPantalonetas;
+                
+                const elemPJ = document.getElementById('totalPijamas');
+                if (elemPJ) elemPJ.textContent = totalPijamas;
+                
+                const elemSD = document.getElementById('totalSudaderas');
+                if (elemSD) elemSD.textContent = totalSudaderas;
+                
+                const elemCH = document.getElementById('totalChaquetas');
+                if (elemCH) elemCH.textContent = totalChaquetas;
+            }
+
+        // Establecer fecha mínima y fecha de pedido actual
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaPedido').value = today;
+        document.getElementById('fechaEntrega').min = today;
+
+        // Manejar subida de imagen
+        document.getElementById('imagenProducto').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 50 * 1024 * 1024) {
+                mostrarNotificacion('⚠️ La imagen es muy grande. Máximo 50MB', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const maxSize = 1200;
+                    if (w > maxSize || h > maxSize) {
+                        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+                        else       { w = Math.round(w * maxSize / h); h = maxSize; }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    imagenBase64 = canvas.toDataURL('image/jpeg', 0.80);
+
+                    const kb = Math.round(imagenBase64.length * 0.75 / 1024);
+                    document.getElementById('uploadArea').classList.add('has-image');
+                    document.getElementById('imagePreview').innerHTML = `
+                        <img src="${imagenBase64}" class="image-preview" alt="Preview">
+                        <p style="margin-top:10px;color:#4CAF50;font-weight:600;">
+                            <i class="fas fa-check-circle"></i> Imagen cargada: ${file.name}
+                            <span style="color:#607D8B;font-size:0.82rem;margin-left:6px;">(${kb}KB)</span>
+                        </p>`;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Manejar envío del formulario
+        document.getElementById('ordenForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Verificar si es producto con tallas o cantidad manual
+            const tipoPrenda = document.getElementById('tipoPrenda').value;
+            const config = configuracionPrendas[tipoPrenda];
+            
+            if (config && config.cantidadManual) {
+                // Validar cantidad manual
+                const cantidadManual = parseInt(document.getElementById('cantidadManual').value) || 0;
+                if (cantidadManual === 0) {
+                    mostrarNotificacion('⚠️ Debes especificar la cantidad de unidades', 'warning');
+                    return;
+                }
+            } else {
+                // Validar tallas según el tipo
+                let totalTallas = 0;
+                
+                if (config.tipoTallas === 'infantil-adulto') {
+                    totalTallas = parseInt(document.getElementById('totalPrendas')?.textContent) || 0;
+                } else if (config.tipoTallas === 'pantalon-mujer-hombre') {
+                    const totalMujer = parseInt(document.getElementById('totalPantalonMujer')?.textContent) || 0;
+                    const totalHombre = parseInt(document.getElementById('totalPantalonHombre')?.textContent) || 0;
+                    totalTallas = totalMujer + totalHombre;
+                } else if (config.tipoTallas === 'pantalonetas') {
+                    totalTallas = parseInt(document.getElementById('totalPantalonetas')?.textContent) || 0;
+                } else if (config.tipoTallas === 'pijamas') {
+                    totalTallas = parseInt(document.getElementById('totalPijamas')?.textContent) || 0;
+                } else if (config.tipoTallas === 'sudaderas') {
+                    totalTallas = parseInt(document.getElementById('totalSudaderas')?.textContent) || 0;
+                } else if (config.tipoTallas === 'chaquetas') {
+                    totalTallas = parseInt(document.getElementById('totalChaquetas')?.textContent) || 0;
+                }
+                
+                if (totalTallas === 0) {
+                    alert('⚠️ Debes especificar al menos una cantidad en las tallas');
+                    return;
+                }
+            }
+            
+            // Continuar con el resto del código...
+
+            // Validar que no exista el número de orden
+            // Validar que no exista el número de orden (localStorage + Supabase)
+            const numeroOrden = document.getElementById('numeroOrden').value;
+
+            // Verificar si estamos en modo edición
+            const urlParams = new URLSearchParams(window.location.search);
+            const modoEdicion = urlParams.get('editar');
+
+            // 1. Verificar en localStorage (solo si NO estamos editando la misma orden)
+            const ordenesExistentes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            let ordenDuplicada = ordenesExistentes.find(o => o.numeroOrden === numeroOrden && o.numeroOrden !== modoEdicion);
+
+            // 2. Verificar en Supabase
+            // 2. Verificar en Supabase (solo si NO estamos editando la misma orden)
+            if (!ordenDuplicada && numeroOrden !== modoEdicion) {
+                try {
+                    const { data } = await supabaseClient
+                        .from('ordenes')
+                        .select('numero_orden')
+                        .eq('numero_orden', numeroOrden)
+                        .limit(1);
+                    
+                    if (data && data.length > 0) {
+                        ordenDuplicada = true;
+                    }
+                } catch (error) {
+                    console.log('No se pudo verificar en Supabase, continuando...');
+                }
+            }
+
+            if (ordenDuplicada) {
+                // Modal de error
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 99999;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="background: white; padding: 40px; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #f44336; margin-bottom: 20px;"></i>
+                        <h2 style="color: #333; margin-bottom: 15px;">¡Orden duplicada!</h2>
+                        <p style="color: #666; font-size: 1.1rem; margin-bottom: 30px;">
+                            Ya existe una orden con el número <strong>${numeroOrden}</strong>.<br>
+                            Por favor, cambia el número de orden.
+                        </p>
+                        <button id="btnCerrarError" class="btn btn-primary" style="padding: 12px 30px;">
+                            <i class="fas fa-check"></i> Entendido
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                document.getElementById('btnCerrarError').onclick = () => {
+                    modal.remove();
+                    document.getElementById('numeroOrden').focus();
+                    document.getElementById('numeroOrden').select();
+                };
+                
+                modal.onclick = (e) => {
+                    if (e.target === modal) modal.remove();
+                };
+                
+                return; // Detener el guardado
+            }
+
+            const orden = {
+                numeroOrden: document.getElementById('numeroOrden').value,
+                cliente: document.getElementById('cliente').value,
+                fechaPedido: document.getElementById('fechaPedido').value,
+                fechaEntrega: document.getElementById('fechaEntrega').value,
+                arte: document.getElementById('arte').value,
+                impresora: document.getElementById('impresora').value,
+                tipoPrenda: document.getElementById('tipoPrenda').value,
+                tela: document.getElementById('tela')?.value === 'Otra'
+                    ? (document.getElementById('telaOtra')?.value || 'Otra')
+                    : (document.getElementById('tela')?.value || ''),
+                cuello: document.getElementById('cuello')?.value || '',
+                colorCuello: document.getElementById('colorCuello')?.value || '',
+                marquilla: document.getElementById('marquilla')?.value || '',
+                imagenDiseno: imagenBase64,
+                imagenMangaDerecha:   imagenMangaDerecha,
+                imagenMangaIzquierda: imagenMangaIzquierda,
+                imagenFrente:         imagenFrente,
+                imagenEspalda:        imagenEspalda,
+                imagenesAdicionales:  imagenesAdicionales.filter(Boolean),
+                // Determinar si usa tallas o cantidad manual
+                tipoPrendaValor: document.getElementById('tipoPrenda').value,
+                ...(configuracionPrendas[document.getElementById('tipoPrenda').value]?.cantidadManual ? {
+                    cantidadTotal: parseInt(document.getElementById('cantidadManual').value) || 0,
+                    tallas: {} // Vacío para productos sin tallas
+                } : {
+                    tallas: {
+                        // Tallas Infantil
+                        '2T': parseInt(document.getElementById('talla2T')?.value) || 0,
+                        '3T': parseInt(document.getElementById('talla3T')?.value) || 0,
+                        '4T': parseInt(document.getElementById('talla4T')?.value) || 0,
+                        '5T': parseInt(document.getElementById('talla5T')?.value) || 0,
+                        '2': parseInt(document.getElementById('talla2')?.value) || 0,
+                        '4': parseInt(document.getElementById('talla4')?.value) || 0,
+                        '6': parseInt(document.getElementById('talla6')?.value) || 0,
+                        '8': parseInt(document.getElementById('talla8')?.value) || 0,
+                        '10': parseInt(document.getElementById('talla10')?.value) || 0,
+                        '12': parseInt(document.getElementById('talla12')?.value) || 0,
+                        '14': parseInt(document.getElementById('talla14')?.value) || 0,
+                        '16': parseInt(document.getElementById('talla16')?.value) || 0,
+
+                        // Tallas Adulto
+                        'XS': parseInt(document.getElementById('tallaXS')?.value) || 0,
+                        'S': parseInt(document.getElementById('tallaS')?.value) || 0,
+                        'M': parseInt(document.getElementById('tallaM')?.value) || 0,
+                        'L': parseInt(document.getElementById('tallaL')?.value) || 0,
+                        'XL': parseInt(document.getElementById('tallaXL')?.value) || 0,
+                        '2XL': parseInt(document.getElementById('talla2XL')?.value) || 0,
+                        '3XL': parseInt(document.getElementById('talla3XL')?.value) || 0,
+                        '4XL': parseInt(document.getElementById('talla4XL')?.value) || 0,
+                        
+                        // Tallas Pantalón Mujer
+                        'PM-4': parseInt(document.getElementById('tallaPM4')?.value) || 0,
+                        'PM-6': parseInt(document.getElementById('tallaPM6')?.value) || 0,
+                        'PM-8': parseInt(document.getElementById('tallaPM8')?.value) || 0,
+                        'PM-10': parseInt(document.getElementById('tallaPM10')?.value) || 0,
+                        'PM-12': parseInt(document.getElementById('tallaPM12')?.value) || 0,
+                        'PM-14': parseInt(document.getElementById('tallaPM14')?.value) || 0,
+                        'PM-16': parseInt(document.getElementById('tallaPM16')?.value) || 0,
+                        'PM-18': parseInt(document.getElementById('tallaPM18')?.value) || 0,
+                        'PM-20': parseInt(document.getElementById('tallaPM20')?.value) || 0,
+                        'PM-22': parseInt(document.getElementById('tallaPM22')?.value) || 0,
+                        
+                        // Tallas Pantalón Hombre
+                        'PH-26': parseInt(document.getElementById('tallaPH26')?.value) || 0,
+                        'PH-28': parseInt(document.getElementById('tallaPH28')?.value) || 0,
+                        'PH-30': parseInt(document.getElementById('tallaPH30')?.value) || 0,
+                        'PH-32': parseInt(document.getElementById('tallaPH32')?.value) || 0,
+                        'PH-34': parseInt(document.getElementById('tallaPH34')?.value) || 0,
+                        'PH-36': parseInt(document.getElementById('tallaPH36')?.value) || 0,
+                        'PH-38': parseInt(document.getElementById('tallaPH38')?.value) || 0,
+                        'PH-40': parseInt(document.getElementById('tallaPH40')?.value) || 0,
+                        'PH-42': parseInt(document.getElementById('tallaPH42')?.value) || 0,
+                        'PH-44': parseInt(document.getElementById('tallaPH44')?.value) || 0,
+                        
+                        // Tallas Pantalonetas
+                        'PT-S': parseInt(document.getElementById('tallaPTS')?.value) || 0,
+                        'PT-M': parseInt(document.getElementById('tallaPTM')?.value) || 0,
+                        'PT-L': parseInt(document.getElementById('tallaPTL')?.value) || 0,
+                        'PT-XL': parseInt(document.getElementById('tallaPTXL')?.value) || 0,
+                        
+                        // Tallas Pijamas
+                        'PJ-S': parseInt(document.getElementById('tallaPJS')?.value) || 0,
+                        'PJ-M': parseInt(document.getElementById('tallaPJM')?.value) || 0,
+                        'PJ-L': parseInt(document.getElementById('tallaPJL')?.value) || 0,
+                        'PJ-XL': parseInt(document.getElementById('tallaPJXL')?.value) || 0,
+                        
+                        // Tallas Sudaderas/Joggers
+                        'SD-S': parseInt(document.getElementById('tallaSD_S')?.value) || 0,
+                        'SD-M': parseInt(document.getElementById('tallaSD_M')?.value) || 0,
+                        'SD-L': parseInt(document.getElementById('tallaSD_L')?.value) || 0,
+                        'SD-XL': parseInt(document.getElementById('tallaSD_XL')?.value) || 0,
+                        
+                        // Tallas Chaquetas
+                        'CH-S': parseInt(document.getElementById('tallaCHS')?.value) || 0,
+                        'CH-M': parseInt(document.getElementById('tallaCHM')?.value) || 0,
+                        'CH-L': parseInt(document.getElementById('tallaCHL')?.value) || 0,
+                        'CH-XL': parseInt(document.getElementById('tallaCHXL')?.value) || 0
+                    }
+                }),
+                descripcionPedido: document.getElementById('descripcionPedido')?.value || '',
+                ancho: document.getElementById('ancho')?.value || '',
+                molde: document.getElementById('molde')?.value || '',
+                anchoBies: document.getElementById('anchoBies')?.value || '',
+                dobladillo: document.getElementById('dobladillo')?.value || '',
+                requerimientos: {
+                    corte: document.getElementById('reqCorte').checked,
+                    impresion: document.getElementById('reqImpresion').checked,
+                    sublimacion: document.getElementById('reqSublimacion').checked,
+                    estampado: document.getElementById('reqEstampado').checked,
+                    confeccion: document.getElementById('reqConfeccion').checked,
+                    dtf: document.getElementById('reqDTF').checked,
+                    corteLaser: document.getElementById('reqCorteLaser').checked,
+                    despacho: document.getElementById('reqDespacho').checked
+                },
+                observaciones: document.getElementById('observaciones').value,
+                fechaCreacion: new Date().toISOString(),
+                estado: {
+                    corte: 'pendiente',
+                    confeccion: 'pendiente',
+                    impresion: 'pendiente',
+                    sublimacion: 'pendiente',
+                    despacho: 'pendiente'
+                }
+            };
+
+           // Guardar en Supabase
+            guardarOrdenEnSupabase(orden);
+            
+            // Limpiar formulario
+            setTimeout(() => {
+                limpiarFormulario();
+            }, 1500);
+        });
+
+        function limpiarFormulario() {
+            document.getElementById('ordenForm').reset();
+            document.querySelectorAll('.talla-input').forEach(input => {
+                input.value = 0;
+            });
+            calcularTotal();
+            imagenBase64 = null;
+            document.getElementById('uploadArea').classList.remove('has-image');
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('fechaPedido').value = today;
+            
+            // Volver a asignar número automático
+            if (!numeroOrdenEditar) {
+                window.DB.obtenerSiguienteNumeroOrden().then(siguiente => {
+                    if (siguiente) {
+                        document.getElementById('numeroOrden').value = siguiente;
+                        document.getElementById('numeroOrden').readOnly = true;
+                    }
+                });
+            }
+        }
+
+        function mostrarNotificacion(mensaje, tipo) {
+            const notif = document.createElement('div');
+            notif.className = `notification ${tipo}`;
+            notif.textContent = mensaje;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+
+        async function guardarOrdenEnSupabase(orden) {
+            try {
+                // Verificar si estamos editando
+                const urlParams = new URLSearchParams(window.location.search);
+                const modoEdicion = urlParams.get('editar');
+                
+                let resultado;
+                
+                if (modoEdicion) {
+                    // ACTUALIZAR orden existente
+                    mostrarNotificacion('⏳ Actualizando orden en la nube...', 'info');
+                    resultado = await window.DB.actualizarOrden(orden.numeroOrden, orden);
+                } else {
+                    // CREAR orden nueva
+                    mostrarNotificacion('⏳ Guardando orden en la nube...', 'info');
+                    resultado = await window.DB.crearOrden(orden);
+                }
+                
+                if (resultado.success) {
+                    // Éxito
+                    const mensaje = modoEdicion ? 'actualizada' : 'creada';
+                    mostrarNotificacion(`✅ Orden ${mensaje} y guardada en la nube: ` + orden.numeroOrden, 'success');
+                    
+                    // También guardar en localStorage como respaldo
+                    let ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                    
+                    if (modoEdicion) {
+                        // Actualizar en localStorage
+                        const index = ordenes.findIndex(o => o.numeroOrden === orden.numeroOrden);
+                        if (index !== -1) {
+                            ordenes[index] = orden;
+                        }
+                    } else {
+                        // Agregar nueva
+                        ordenes.push(orden);
+                    }
+                    
+                    localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                    
+                    // Redirigir al dashboard después de 2 segundos
+                    setTimeout(() => {
+                        const modal = document.createElement('div');
+                        modal.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: rgba(0,0,0,0.8);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            z-index: 99999;
+                        `;
+                        
+                        const accion = modoEdicion ? 'actualizada' : 'creada';
+                        
+                        modal.innerHTML = `
+                            <div style="background: white; padding: 40px; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                                <i class="fas fa-check-circle" style="font-size: 4rem; color: #4CAF50; margin-bottom: 20px;"></i>
+                                <h2 style="color: #333; margin-bottom: 15px;">¡Orden ${accion} exitosamente!</h2>
+                                <p style="color: #666; font-size: 1.1rem; margin-bottom: 30px;">
+                                    ¿Deseas ir al Dashboard para ver la orden?
+                                </p>
+                                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                                    <button id="btnQuedarse" style="padding:12px 24px;border:none;border-radius:12px;
+                                        background:#EEF2F7;color:#607D8B;font-weight:600;cursor:pointer;
+                                        font-size:0.95rem;font-family:'Outfit',sans-serif;
+                                        display:inline-flex;align-items:center;gap:7px;">
+                                        <i class="fas fa-plus"></i> ${modoEdicion ? 'Seguir Editando' : 'Crear Otra'}
+                                    </button>
+                                    <button id="btnIrDashboard" style="padding:12px 24px;border:none;border-radius:12px;
+                                        background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;
+                                        font-weight:700;cursor:pointer;font-size:0.95rem;font-family:'Outfit',sans-serif;
+                                        box-shadow:0 4px 14px rgba(27,94,32,0.35);
+                                        display:inline-flex;align-items:center;gap:7px;">
+                                        <i class="fas fa-tv"></i> Ir al Dashboard
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(modal);
+                        
+                        document.getElementById('btnQuedarse').onclick = () => {
+                            modal.remove();
+                            if (!modoEdicion) limpiarFormulario();
+                        };
+                        
+                        document.getElementById('btnIrDashboard').onclick = () => {
+                            window.location.href = 'dashboard-jefe.html';
+                        };
+                    }, 2000);
+                    
+                } else {
+                    // Error de Supabase - guardar solo local
+                    console.error('Error Supabase:', resultado.error);
+                    
+                    let ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                    
+                    if (modoEdicion) {
+                        const index = ordenes.findIndex(o => o.numeroOrden === orden.numeroOrden);
+                        if (index !== -1) {
+                            ordenes[index] = orden;
+                        }
+                    } else {
+                        ordenes.push(orden);
+                    }
+                    
+                    localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                    
+                    mostrarNotificacion('⚠️ Guardado localmente (sin conexión a internet)', 'warning');
+                    
+                    setTimeout(() => {
+                        limpiarFormulario();
+                    }, 2000);
+                }
+                
+            } catch (error) {
+                // Error total - modo offline
+                console.error('Error al guardar:', error);
+                
+                let ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const modoEdicion = urlParams.get('editar');
+                
+                if (modoEdicion) {
+                    const index = ordenes.findIndex(o => o.numeroOrden === orden.numeroOrden);
+                    if (index !== -1) {
+                        ordenes[index] = orden;
+                    }
+                } else {
+                    ordenes.push(orden);
+                }
+                
+                localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                
+                mostrarNotificacion('⚠️ Modo offline: Orden guardada localmente', 'warning');
+                
+                setTimeout(() => {
+                    limpiarFormulario();
+                }, 2000);
+            }
+        }
+
+        // Configuración de campos por tipo de prenda
+        const configuracionPrendas = {
+            // CAMISETAS Y SIMILARES - Tallas Infantil + Adulto
+            'Camiseta': { 
+                tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
+                dobladillo: true, anchoBies: true, marquilla: true, 
+                tipoTallas: 'infantil-adulto', cantidadManual: false 
+            },
+            'Camiseta Polo': { 
+                tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
+                dobladillo: true, anchoBies: true, marquilla: true, 
+                tipoTallas: 'infantil-adulto', cantidadManual: false 
+            },
+            'Blusa': { 
+                tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
+                dobladillo: true, anchoBies: true, marquilla: true, 
+                tipoTallas: 'infantil-adulto', cantidadManual: false 
+            },
+            'Camisa': { 
+                tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
+                dobladillo: true, anchoBies: true, marquilla: true, 
+                tipoTallas: 'infantil-adulto', cantidadManual: false 
+            },
+            
+            // PANTALONES - Tallas específicas de pantalón
+            'Jeans': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'pantalon-mujer-hombre', cantidadManual: false 
+            },
+            'Pantalón': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'pantalon-mujer-hombre', cantidadManual: false 
+            },
+            
+            // PANTALONETAS - Tallas S M L XL
+            'Pantaloneta': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'pantalonetas', cantidadManual: false 
+            },
+            
+            // PIJAMAS - Tallas S M L XL
+            'Pijama': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: true, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'pijamas', cantidadManual: false 
+            },
+            
+            // SUDADERAS Y JOGGERS - Tallas S M L XL
+            'Sudadera': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'sudaderas', cantidadManual: false 
+            },
+            'Jogger': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'sudaderas', cantidadManual: false 
+            },
+            
+            // CHAQUETAS - Tallas S M L XL
+            'Chaqueta': { 
+                tela: true, cuello: false, colorCuello: false, molde: true, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: true, 
+                tipoTallas: 'chaquetas', cantidadManual: false 
+            },
+            
+            // ACCESORIOS - Cantidad manual
+            'Totebag': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Tula': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Mochila': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Gorra': { 
+                tela: false, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Toalla': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: true, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Manga': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: true, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Delantal': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            }
+        };
+
+        function actualizarCamposPorTipoPrenda() {
+            const tipoPrenda = document.getElementById('tipoPrenda').value;
+            const config = configuracionPrendas[tipoPrenda];
+            
+            if (!config) {
+                // Si no hay selección, mostrar todo
+                return;
+            }
+            
+            // Mostrar/ocultar filas completas (las que tienen el ID en el form-row)
+            toggleElemento('campo-tela', config.tela);
+            toggleElemento('campo-ancho-molde', config.ancho || config.molde);
+            toggleElemento('campo-cuello-anchoBies', config.cuello || config.anchoBies);
+            toggleElemento('campo-dobladillo-colorCuello', config.dobladillo || config.colorCuello);
+            toggleElemento('campo-marquilla-vacio', config.marquilla);
+            
+            // Mostrar/ocultar campos individuales dentro de las filas
+            toggleElemento('campo-ancho', config.ancho);
+            toggleElemento('campo-molde', config.molde);
+            toggleElemento('campo-cuello', config.cuello);
+            toggleElemento('campo-anchoBies', config.anchoBies);
+            toggleElemento('campo-dobladillo', config.dobladillo);
+            toggleElemento('campo-colorCuello', config.colorCuello);
+            toggleElemento('campo-marquilla', config.marquilla);
+            
+            // Mostrar/ocultar secciones de tallas o cantidad manual
+            const seccionTallasDiv = document.getElementById('seccion-tallas-completa');
+            const seccionCantidadManual = document.getElementById('seccion-cantidad-manual');
+
+            if (config.cantidadManual) {
+                if (seccionTallasDiv) seccionTallasDiv.style.display = 'none';
+                if (seccionCantidadManual) seccionCantidadManual.style.display = 'block';
+            } else {
+                if (seccionTallasDiv) seccionTallasDiv.style.display = 'block';
+                if (seccionCantidadManual) seccionCantidadManual.style.display = 'none';
+            }
+
+            // Limpiar valor de cantidad manual cuando se oculta
+            const inputCantidad = document.getElementById('cantidadManual');
+            if (inputCantidad && !config.cantidadManual) {
+                inputCantidad.value = '';
+            }
+            
+            // ==========================================
+            // MOSTRAR/OCULTAR SECCIONES DE TALLAS ESPECÍFICAS
+            // ==========================================
+            
+            // Ocultar TODAS las secciones de tallas primero
+            const seccionInfantil = document.getElementById('seccion-tallas-infantil');
+            const seccionAdulto = document.getElementById('seccion-tallas-adulto');
+            const seccionPantalonMujer = document.getElementById('seccion-pantalon-mujer');
+            const seccionPantalonHombre = document.getElementById('seccion-pantalon-hombre');
+            const seccionPantalonetas = document.getElementById('seccion-pantalonetas');
+            const seccionPijamas = document.getElementById('seccion-pijamas');
+            const seccionSudaderas = document.getElementById('seccion-sudaderas');
+            const seccionChaquetas = document.getElementById('seccion-chaquetas');
+            
+            if (seccionInfantil) seccionInfantil.style.display = 'none';
+            if (seccionAdulto) seccionAdulto.style.display = 'none';
+            if (seccionPantalonMujer) seccionPantalonMujer.style.display = 'none';
+            if (seccionPantalonHombre) seccionPantalonHombre.style.display = 'none';
+            if (seccionPantalonetas) seccionPantalonetas.style.display = 'none';
+            if (seccionPijamas) seccionPijamas.style.display = 'none';
+            if (seccionSudaderas) seccionSudaderas.style.display = 'none';
+            if (seccionChaquetas) seccionChaquetas.style.display = 'none';
+            
+            // Mostrar las secciones correctas según tipoTallas
+            if (config.tipoTallas === 'infantil-adulto') {
+                if (seccionInfantil) seccionInfantil.style.display = 'block';
+                if (seccionAdulto) seccionAdulto.style.display = 'block';
+            } else if (config.tipoTallas === 'pantalon-mujer-hombre') {
+                if (seccionPantalonMujer) seccionPantalonMujer.style.display = 'block';
+                if (seccionPantalonHombre) seccionPantalonHombre.style.display = 'block';
+            } else if (config.tipoTallas === 'pantalonetas') {
+                if (seccionPantalonetas) seccionPantalonetas.style.display = 'block';
+            } else if (config.tipoTallas === 'pijamas') {
+                if (seccionPijamas) seccionPijamas.style.display = 'block';
+            } else if (config.tipoTallas === 'sudaderas') {
+                if (seccionSudaderas) seccionSudaderas.style.display = 'block';
+            } else if (config.tipoTallas === 'chaquetas') {
+                if (seccionChaquetas) seccionChaquetas.style.display = 'block';
+            }
+        }
+
+        function toggleElemento(id, mostrar) {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.style.display = mostrar ? '' : 'none'; // Cambio aquí: '' en vez de 'block'
+                // Limpiar valor si se oculta
+                if (!mostrar) {
+                    const inputs = elemento.querySelectorAll('input, select');
+                    inputs.forEach(input => {
+                        if (input.id !== 'tipoPrenda') { // No limpiar el tipo de prenda
+                            input.value = '';
+                        }
+                    });
+                }
+            }
+        }
+        function toggleCampo(id, mostrar) {
+            const elemento = document.getElementById(id);
+            if (elemento) {
+                elemento.style.display = mostrar ? 'block' : 'none';
+                // Limpiar valor si se oculta
+                if (!mostrar) {
+                    const input = elemento.querySelector('input, select');
+                    if (input) input.value = '';
+                }
+            }
+        }
+
+        function toggleOtraTela() {
+            const sel = document.getElementById('tela');
+            const inp = document.getElementById('telaOtra');
+            inp.style.display = sel.value === 'Otra' ? 'block' : 'none';
+            if (sel.value !== 'Otra') inp.value = '';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REG Marketing S.A.S - Sistema de Gestión</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="database.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        html, body { min-height:100vh; font-family:'Outfit',sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #0D47A1 0%, #1565C0 45%, #1976D2 100%);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 24px 16px 50px;
+            position: relative; overflow-x: hidden;
+        }
+
+        .bg-circles { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+        .bg-circles span {
+            position:absolute; border-radius:50%;
+            background:rgba(255,255,255,0.04);
+            animation:floatUp linear infinite;
+        }
+        .bg-circles span:nth-child(1){ width:80px;  height:80px;  left:7%;  animation-duration:20s; animation-delay:0s; }
+        .bg-circles span:nth-child(2){ width:30px;  height:30px;  left:20%; animation-duration:14s; animation-delay:3s; }
+        .bg-circles span:nth-child(3){ width:55px;  height:55px;  left:63%; animation-duration:18s; animation-delay:6s; }
+        .bg-circles span:nth-child(4){ width:120px; height:120px; left:80%; animation-duration:25s; animation-delay:1s; }
+        .bg-circles span:nth-child(5){ width:22px;  height:22px;  left:45%; animation-duration:12s; animation-delay:8s; }
+        .bg-circles span:nth-child(6){ width:65px;  height:65px;  left:33%; animation-duration:21s; animation-delay:4s; }
+
+        @keyframes floatUp {
+            0%   { transform:translateY(110vh) rotate(0deg);   opacity:0; }
+            8%   { opacity:1; }
+            92%  { opacity:1; }
+            100% { transform:translateY(-10vh) rotate(540deg); opacity:0; }
+        }
+
+        .wrapper {
+            position:relative; z-index:1; width:100%; max-width:1000px;
+            animation: pageIn 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes pageIn {
+            from { opacity:0; transform:translateY(24px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .header-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        .btn-logout {
+            background: linear-gradient(135deg, #c62828, #e53935);
+            border: none;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 18px rgba(198, 40, 40, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(198, 40, 40, 0.4);
+        }
+
+        @media (max-width:640px) {
+            .header-actions {
+                position: static;
+                margin-top: 15px;
+            }
+        }
+        /* Header */
+        .page-header { text-align:center; margin-bottom:36px; }
+        .logo-wrap {
+            width:90px; height:90px;
+            background:rgba(255,255,255,0.92);
+            border:3px solid rgba(255,255,255,0.95);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 16px;
+            backdrop-filter:blur(8px);
+            box-shadow:0 8px 24px rgba(0,0,0,0.2);
+        }
+        .logo-wrap img { width:56px; height:56px; object-fit:contain; }
+        .logo-wrap i   { font-size:2.2rem; color:white; display:none; }
+        .page-header h1 {
+            font-size:2.4rem; font-weight:800; color:white;
+            letter-spacing:2px; text-shadow:0 2px 12px rgba(0,0,0,0.25);
+            margin-bottom:4px;
+        }
+        .page-header .sub { font-size:0.95rem; color:rgba(255,255,255,0.75); }
+
+        /* Stats banner */
+        .stats-banner {
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:16px;
+            margin-bottom:28px;
+        }
+        .stat-card {
+            background:rgba(255,255,255,0.12);
+            backdrop-filter:blur(10px);
+            border:1.5px solid rgba(255,255,255,0.2);
+            border-radius:18px;
+            padding:20px;
+            text-align:center;
+            transition:all 0.3s ease;
+        }
+        .stat-card:hover { background:rgba(255,255,255,0.18); transform:translateY(-3px); }
+        .stat-number {
+            font-size:2.8rem; font-weight:800; color:white;
+            text-shadow:0 2px 8px rgba(0,0,0,0.2); line-height:1;
+        }
+        .stat-label { font-size:0.82rem; color:rgba(255,255,255,0.75); font-weight:600; margin-top:6px; text-transform:uppercase; letter-spacing:0.5px; }
+        .stat-icon { font-size:1.4rem; color:rgba(255,255,255,0.5); margin-bottom:8px; }
+
+        /* Menu grid */
+        .menu-grid {
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:20px;
+        }
+
+        .menu-card {
+            background:white;
+            border-radius:22px;
+            padding:36px 24px;
+            text-align:center;
+            cursor:pointer;
+            transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+            border:2.5px solid #E8EDF2;
+            box-shadow:0 8px 28px rgba(0,0,0,0.12);
+            position:relative; overflow:hidden;
+            text-decoration:none; display:block;
+            animation:cardFadeIn 0.5s ease both;
+        }
+        .menu-card:nth-child(1){ animation-delay:0.1s; }
+        .menu-card:nth-child(2){ animation-delay:0.2s; }
+        .menu-card:nth-child(3){ animation-delay:0.3s; }
+
+        @keyframes cardFadeIn {
+            from { opacity:0; transform:translateY(20px) scale(0.97); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+
+        .menu-card::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:5px;
+            border-radius:22px 22px 0 0;
+        }
+        .menu-card.jefe::before   { background:linear-gradient(90deg,#0D47A1,#42A5F5); }
+        .menu-card.areas::before  { background:linear-gradient(90deg,#1B5E20,#66BB6A); }
+        .menu-card.orden::before  { background:linear-gradient(90deg,#E65100,#FFA726); }
+
+        .menu-card:hover {
+            transform:translateY(-8px);
+            box-shadow:0 18px 48px rgba(0,0,0,0.18);
+        }
+        .menu-card.jefe:hover  { border-color:#1565C0; }
+        .menu-card.areas:hover { border-color:#2E7D32; }
+        .menu-card.orden:hover { border-color:#E65100; }
+
+        .menu-icon-wrap {
+            width:72px; height:72px; border-radius:18px;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 18px; font-size:1.9rem;
+            transition:transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .menu-card.jefe  .menu-icon-wrap { background:linear-gradient(135deg,#0D47A1,#1976D2); color:white; box-shadow:0 6px 18px rgba(13,71,161,0.35); }
+        .menu-card.areas .menu-icon-wrap { background:linear-gradient(135deg,#1B5E20,#2E7D32); color:white; box-shadow:0 6px 18px rgba(27,94,32,0.35); }
+        .menu-card.orden .menu-icon-wrap { background:linear-gradient(135deg,#E65100,#F57C00); color:white; box-shadow:0 6px 18px rgba(230,81,0,0.35); }
+
+        .menu-card:hover .menu-icon-wrap { transform:scale(1.1) rotate(-5deg); }
+
+        .menu-card h2 { font-size:1.25rem; font-weight:800; color:#1A2332; margin-bottom:10px; }
+        .menu-card p  { font-size:0.85rem; color:#607D8B; line-height:1.6; }
+
+        /* Footer */
+        .page-footer { text-align:center; margin-top:32px; color:rgba(255,255,255,0.6); font-size:0.82rem; }
+        .page-footer p { margin-bottom:4px; }
+
+        /* Notificaciones */
+        .notification {
+            position:fixed; top:20px; right:20px; padding:14px 22px;
+            border-radius:12px; color:white; font-weight:600;
+            font-family:'Outfit',sans-serif;
+            box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999;
+            animation:slideIn 0.3s ease; max-width:340px;
+            display:flex; align-items:center; gap:10px;
+        }
+        .notification.success { background:linear-gradient(135deg,#2E7D32,#43A047); }
+        @keyframes slideIn  { from{transform:translateX(110%);opacity:0;} to{transform:translateX(0);opacity:1;} }
+        @keyframes slideOut { from{transform:translateX(0);opacity:1;} to{transform:translateX(110%);opacity:0;} }
+
+        @media (max-width:640px) {
+            .menu-grid { grid-template-columns:1fr; }
+            .stats-banner { grid-template-columns:1fr; }
+            .page-header h1 { font-size:1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="wrapper">
+
+        <div class="page-header">
+            <div class="logo-wrap">
+                <img src="logo.png" alt="REG" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                <i class="fas fa-industry"></i>
+            </div>
+            <h1>REG MARKETING</h1>
+            <p class="sub">S.A.S — Sistema Profesional de Gestión de Producción Textil</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-logout" onclick="cerrarSesion()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-banner">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="stat-number" id="statOrdenes">0</div>
+                <div class="stat-label">Órdenes Activas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                <div class="stat-number" id="statProceso">0</div>
+                <div class="stat-label">En Proceso</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-number" id="statHistorial">0</div>
+                <div class="stat-label">Completadas</div>
+            </div>
+        </div>
+
+        <!-- Menú -->
+        <div class="menu-grid">
+            <a href="dashboard-jefe.html" class="menu-card jefe">
+                <div class="menu-icon-wrap"><i class="fas fa-tv"></i></div>
+                <h2>Dashboard Jefe</h2>
+                <p>Vista general de todas las órdenes en tiempo real con indicadores de estado</p>
+            </a>
+            <a href="tablet-areas.html" class="menu-card areas">
+                <div class="menu-icon-wrap"><i class="fas fa-users-cog"></i></div>
+                <h2>Áreas de Trabajo</h2>
+                <p>Acceso para líderes de área</p>
+            </a>
+            <a href="crear-orden.html" class="menu-card orden">
+                <div class="menu-icon-wrap"><i class="fas fa-plus-circle"></i></div>
+                <h2>Crear Orden</h2>
+                <p>Registra nuevas órdenes de producción con todos los detalles del pedido</p>
+            </a>
+        </div>
+
+        <div class="page-footer">
+            <p><i class="fas fa-info-circle"></i> Sistema de Gestión de Producción Textil — REG Marketing S.A.S</p>
+            <p>Versión 2.0 · Actualización automática en tiempo real</p>
+        </div>
+
+    </div>
+
+    <script>
+        if (!sessionStorage.getItem('jefeAutenticado') && !sessionStorage.getItem('trabajadorAutenticado')) {
+            window.location.href = 'index.html';
+        }
+                async function cargarEstadisticas() {
+            let ordenes = [];
+            try {
+                const supabaseOrdenes = await window.DB.obtenerOrdenes();
+                if (supabaseOrdenes && supabaseOrdenes.length > 0) {
+                    localStorage.setItem('ordenes', JSON.stringify(supabaseOrdenes));
+                    ordenes = supabaseOrdenes;
+                } else {
+                    ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                }
+            } catch(e) {
+                ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            }
+
+            const enProceso = ordenes.filter(o => Object.values(o.estado || {}).some(e => e === 'en-proceso')).length;
+
+            let totalHistorial = 0;
+            try {
+                const historialSupabase = await window.DB.obtenerHistorial();
+                if (historialSupabase && historialSupabase.length > 0) {
+                    totalHistorial = historialSupabase.length;
+                    localStorage.setItem('historialOrdenes', JSON.stringify(
+                        historialSupabase.map(item => ({ ...item.datos_completos, fechaCompletado: item.fecha_completado }))
+                    ));
+                } else {
+                    totalHistorial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]').length;
+                }
+            } catch(e) {
+                totalHistorial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]').length;
+            }
+
+            const listasParaHistorial = ordenes.filter(o => {
+                const areas = Object.keys(o.requerimientos || {}).filter(k => o.requerimientos[k]);
+                return areas.length > 0 && areas.every(a => o.estado[a] === 'completado');
+            }).length;
+
+            animarNumero('statOrdenes', ordenes.length);
+            animarNumero('statProceso', enProceso);
+            animarNumero('statHistorial', listasParaHistorial);
+        }
+
+        function animarNumero(id, target) {
+            const el = document.getElementById(id);
+            let current = 0;
+            const step = Math.ceil(target / 20);
+            const timer = setInterval(() => {
+                current = Math.min(current + step, target);
+                el.textContent = current;
+                if (current >= target) clearInterval(timer);
+            }, 40);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarEstadisticas();
+            setInterval(cargarEstadisticas, 10000);
+
+            setTimeout(() => {
+                const notif = document.createElement('div');
+                notif.className = 'notification success';
+                notif.innerHTML = '<i class="fas fa-check-circle"></i> Sistema iniciado correctamente';
+                document.body.appendChild(notif);
+                setTimeout(() => {
+                    notif.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notif.remove(), 300);
+                }, 3000);
+            }, 500);
+        });
+
+        function cerrarSesion() {
+            sessionStorage.removeItem('jefeAutenticado');
+            sessionStorage.removeItem('trabajadorAutenticado');
+            localStorage.removeItem('areaTrabajoActual');
+
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
+

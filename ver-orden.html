@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orden de Producción - REG Marketing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0D47A1 0%, #1565C0 45%, #1976D2 100%);
+            min-height: 100vh;
+            padding: 24px 16px 40px;
+        }
+
+        .orden-documento {
+            max-width: 1000px;
+            margin: 0 auto;
+            animation: pageIn 0.5s cubic-bezier(0.4,0,0.2,1);
+            filter: drop-shadow(0 8px 32px rgba(0,0,0,0.3));
+        }
+        @keyframes pageIn {
+            from { opacity:0; transform:translateY(20px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* HEADER CARD */
+        .orden-header {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: 3px solid rgba(255,255,255,0.4);
+        }
+
+        .orden-header-top {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            background: white;
+            border-bottom: 3px solid #E3F2FD;
+        }
+
+        .orden-logo {
+            padding: 20px;
+            border-right: 3px solid #E3F2FD;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F8FAFF;
+        }
+        .orden-logo img { max-width: 130px; max-height: 70px; }
+
+        .orden-titulo {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+        .orden-titulo h1 {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: #1565C0;
+            letter-spacing: 2px;
+        }
+
+        /* INFO GRID */
+        .orden-info-grid {
+            display: grid;
+            grid-template-columns: 2.5fr 1.2fr 0.8fr;
+            border-top: 3px solid #E3F2FD;
+        }
+
+        .info-seccion {
+            border-right: 3px solid #E3F2FD;
+            padding: 0;
+        }
+        .info-seccion:last-child { border-right: none; }
+
+        .info-seccion-header {
+            background: linear-gradient(135deg, #1565C0, #1976D2);
+            color: white;
+            padding: 7px 14px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 14px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #F0F4F8;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-weight: 700; color: #455A64; }
+        .info-value { color: #1A2332; font-weight: 500; }
+
+        /* ESPECIFICACIONES */
+        .orden-especificaciones {
+            display: grid;
+            grid-template-columns: 1fr;
+            background: white;
+            border-top: 3px solid #E3F2FD;
+        }
+
+        .spec-header {
+            background: linear-gradient(135deg, #1565C0, #1976D2);
+            color: white;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .spec-content { padding: 14px 18px; }
+
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #F0F4F8;
+            font-size: 0.85rem;
+        }
+        .spec-row:last-child { border-bottom: none; }
+
+        /* DISEÑO */
+        .diseno-section {
+            padding: 20px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #FAFCFF;
+        }
+        .diseno-imagen {
+            max-width: 100%;
+            max-height: 350px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        /* TALLAS */
+        .tallas-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+        }
+        .tallas-table thead { background: #1565C0; color: white; }
+        .tallas-table thead tr:first-child th {
+            background: linear-gradient(135deg, #1565C0, #1976D2);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 12px;
+            border-bottom: 2px solid #0D47A1;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+        .tallas-table th {
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            background: #1976D2;
+            color: white;
+            border-right: 1px solid #0D47A1;
+        }
+        .tallas-table th:last-child { border-right: none; }
+        .tallas-table td {
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-right: 1px solid #E3F2FD;
+            border-bottom: 1px solid #E3F2FD;
+            background: white;
+            color: #1A2332;
+        }
+        .tallas-table td:last-child { border-right: none; }
+        .tallas-table tbody tr:last-child td { border-bottom: none; }
+        .tallas-table .total-col {
+            background: #E3F2FD !important;
+            font-weight: 800;
+            color: #1565C0 !important;
+            font-size: 1.2rem;
+        }
+
+        /* TOTAL GENERAL */
+        .total-general {
+            background: linear-gradient(135deg, #0D47A1, #1565C0);
+            color: white;
+            padding: 16px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        /* OBSERVACIONES */
+        .observaciones-box {
+            min-height: 80px;
+            padding: 14px;
+            background: #F8FAFF;
+            border-radius: 10px;
+            border: 1.5px solid #E3F2FD;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+            color: #455A64;
+            margin-top: 10px;
+        }
+
+        /* SECCIÓN WRAPPER */
+        .seccion-wrapper {
+            background: white;
+            border-top: 3px solid #E3F2FD;
+            padding: 16px 18px;
+        }
+
+        /* CHECKBOXES */
+        input[type="checkbox"] {
+            width: 18px; height: 18px;
+            cursor: default;
+            -webkit-appearance: none;
+            appearance: none;
+            border: 2px solid #90CAF9;
+            border-radius: 4px;
+            background: white;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        input[type="checkbox"]:checked {
+            background: #1565C0;
+            border-color: #1565C0;
+        }
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        /* ACCIONES */
+        .acciones-orden {
+            padding: 20px;
+            text-align: center;
+            background: transparent;
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Outfit', sans-serif;
+        }
+        .btn-primary  { background: linear-gradient(135deg,#1565C0,#1976D2); color:white; box-shadow:0 4px 14px rgba(21,101,192,0.35); }
+        .btn-success  { background: linear-gradient(135deg,#1B5E20,#2E7D32); color:white; box-shadow:0 4px 14px rgba(27,94,32,0.35); }
+        .btn-secondary{ background: #607D8B; color:white; box-shadow:0 4px 14px rgba(96,125,139,0.3); }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+
+        /* Última card redondeada abajo */
+        .bottom-card {
+            background: white;
+            border-radius: 0 0 20px 20px;
+            border-top: 3px solid #E3F2FD;
+            padding: 16px 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .acciones-orden { display: none; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+
+        @media (max-width: 768px) {
+            .orden-info-grid { grid-template-columns: 1fr; }
+            .orden-especificaciones { grid-template-columns: 1fr; }
+            .orden-header-top { grid-template-columns: 1fr; }
+            .orden-logo { border-right: none; border-bottom: 3px solid #E3F2FD; padding: 14px; }
+            .orden-titulo h1 { font-size: 1.2rem; letter-spacing: 1px; }
+            body { padding: 12px 8px 30px; }
+            .spec-content { grid-template-columns: 1fr !important; gap: 0 !important; }
+            #seccion-tallas, #seccion-cantidad-simple { overflow-x: auto; }
+            .tallas-table { min-width: 500px; }
+            .tallas-table th, .tallas-table td { padding: 8px 4px; font-size: 0.78rem; }
+            .acciones-orden { gap: 8px; }
+            .btn { padding: 10px 16px; font-size: 0.85rem; }
+        }
+
+        @media (max-width: 480px) {
+            .orden-titulo h1 { font-size: 1rem; }
+            .info-row { font-size: 0.78rem; }
+            .spec-row { font-size: 0.78rem; }
+            .total-general { font-size: 1rem; padding: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orden-documento">
+        <!-- HEADER -->
+        <div class="orden-header">
+            <div class="orden-header-top">
+                <div class="orden-logo">
+                    <img src="logo.png" alt="REG Marketing" onerror="this.style.display='none'">
+                </div>
+                <div class="orden-titulo">
+                    <h1>ORDEN DE PRODUCCIÓN</h1>
+                </div>
+            </div>
+
+            <!-- INFO PRINCIPAL -->
+            <!-- INFO PRINCIPAL -->
+            <div class="orden-info-grid" style="grid-template-columns: 2.5fr 1.2fr 0.8fr;">
+                <!-- COLUMNA IZQUIERDA: Info del Cliente -->
+                <div class="info-seccion">
+                    <div class="info-seccion-header">INFORMACIÓN DEL CLIENTE / EMPRESA</div>
+                    <div class="info-row"
+                        style="border-bottom: 2px solid #2196F3; padding-bottom: 8px; margin-bottom: 8px;">
+                        <span class="info-label">N° ORDEN:</span>
+                        <span class="info-value" style="font-size: 1.2rem; font-weight: bold; color: #2196F3;"
+                            id="infoNumeroOrden">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">CLIENTE:</span>
+                        <span class="info-value" id="infoCliente">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">ARTE:</span>
+                        <span class="info-value" id="infoArte">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">DESCRIPCIÓN PEDIDO:</span>
+                        <span class="info-value" id="infoDescripcionPedido">-</span>
+                    </div>
+                </div>
+
+                <!-- COLUMNA CENTRO: Requerimientos -->
+                <div class="info-seccion">
+                    <div class="info-seccion-header">REQUERIMIENTOS</div>
+                    <div
+                        style="padding: 10px 5px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqCorte" disabled style="width: 18px; height: 18px;">
+                            <span>Corte</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqImpresion" disabled style="width: 18px; height: 18px;">
+                            <span>Impresión</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqSublimacion" disabled style="width: 18px; height: 18px;">
+                            <span>Sublimación</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqEstampado" disabled style="width: 18px; height: 18px;">
+                            <span>Estampado</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqConfeccion" disabled style="width: 18px; height: 18px;">
+                            <span>Confección</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqDTF" disabled style="width: 18px; height: 18px;">
+                            <span>DTF</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqDespacho" disabled style="width: 18px; height: 18px;">
+                            <span>Despacho</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqCorteLaser" disabled style="width: 18px; height: 18px;">
+                            <span>Corte Láser</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- COLUMNA DERECHA: Fechas -->
+                <div class="info-seccion" style="padding:0;">
+                    <div class="info-seccion-header">FECHAS</div>
+                    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:12px;">
+                        <div style="text-align:center;">
+                            <div style="font-size:0.72rem;font-weight:700;color:#1565C0;letter-spacing:0.5px;margin-bottom:4px;">PEDIDO</div>
+                            <div style="font-size:0.95rem;font-weight:700;color:#1565C0;" id="infoFechaPedido">-</div>
+                        </div>
+                        <div style="border-top:1px solid #E3F2FD;padding-top:12px;text-align:center;">
+                            <div style="font-size:0.72rem;font-weight:700;color:#C62828;letter-spacing:0.5px;margin-bottom:4px;">ENTREGA</div>
+                            <div style="font-size:0.95rem;font-weight:700;color:#C62828;" id="infoFechaEntrega">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESPECIFICACIONES -->
+        <!-- ESPECIFICACIONES -->
+        <div class="orden-especificaciones" style="grid-template-columns: 1fr;">
+            <div>
+                <div class="spec-header" style="text-align: center;">ESPECIFICACIONES</div>
+                <div class="spec-content" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <!-- COLUMNA 1 -->
+                    <div>
+                        <div class="spec-row">
+                            <span class="info-label">IMPRESORA:</span>
+                            <span class="info-value" id="specImpresora">-</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="info-label">TELA:</span>
+                            <span class="info-value" id="specTela">-</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="info-label">CUELLO:</span>
+                            <span class="info-value" id="specCuello">-</span>
+                        </div>
+                    </div>
+                    
+                    <!-- COLUMNA 2 -->
+                    <div>
+                        <div class="spec-row">
+                            <span class="info-label">COLOR CUELLO:</span>
+                            <span class="info-value" id="specColorCuello">-</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="info-label">MARQUILLA:</span>
+                            <span class="info-value" id="specMarquilla">-</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="info-label">ANCHO:</span>
+                            <span class="info-value" id="specAncho">-</span>
+                        </div>
+                    </div>
+                    
+                    <!-- COLUMNA 3 -->
+                    <div>
+                        <div class="spec-row">
+                            <span class="info-label">MOLDE:</span>
+                            <span class="info-value" id="specMolde">-</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="info-label">ANCHO BIES:</span>
+                            <span class="info-value" id="specAnchoBies">-</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="info-label">DOBLADILLO:</span>
+                            <span class="info-value" id="specDobladillo">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DISEÑO -->
+        <div class="orden-especificaciones">
+            <div style="grid-column: 1 / -1;">
+                <div class="spec-header" style="text-align: center;">DISEÑO DEL PRODUCTO</div>
+                <div class="diseno-section" id="disenoSection">
+                    <p style="color: #999;">No se ha cargado ninguna imagen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA DE TALLAS -->
+        <!-- TABLAS DE TALLAS -->
+        <!-- TABLAS DE TALLAS (solo si tiene tallas) -->
+        <div id="seccion-tallas">
+            <!-- INFANTIL -->
+            <div id="seccion-infantil-vista">
+                <table class="tallas-table" style="border: 3px solid #0D47A1;">
+                    <thead>
+                        <tr>
+                            <th colspan="13" style="background: #1565C0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #0D47A1;">TALLAS INFANTIL</th>
+                        </tr>
+                        <tr>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">2T</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">3T</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">4T</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">5T</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">2</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">4</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">6</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">8</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">10</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">12</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">14</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">16</th>
+                            <th style="background: #1565C0; border-right: none; border-bottom: 2px solid #0D47A1;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant2T">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant3T">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant4T">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant5T">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant2">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant4">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant6">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant8">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant10">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant12">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant14">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="cant16">0</td>
+                            <td style="background: #E3F2FD !important; font-weight: bold; font-size: 1.3rem; color: #1565C0 !important; border-right: none; border-bottom: 2px solid #BBDEFB;" id="totalInfantil">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ADULTO -->
+            <div id="seccion-adulto-vista">
+                <table class="tallas-table" style="border: 3px solid #0D47A1; border-top: none; margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th colspan="9" style="background: #1565C0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #0D47A1;">TALLAS ADULTO</th>
+                        </tr>
+                        <tr>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">XS</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">S</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">M</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">L</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">XL</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">2XL</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">3XL</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">4XL</th>
+                            <th style="background: #1565C0; border-right: none; border-bottom: 2px solid #0D47A1;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cantXS">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cantS">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cantM">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cantL">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cantXL">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cant2XL">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cant3XL">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cant4XL">0</td>
+                            <td style="background: #E3F2FD !important; font-weight: bold; font-size: 1.3rem; color: #1565C0 !important; border-right: none; border-bottom: none;" id="totalAdulto">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- TALLAS PANTALÓN MUJER -->
+            <div id="seccion-pantalon-mujer-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #880E4F;">
+                    <thead>
+                        <tr>
+                            <th colspan="6" style="background: #AD1457; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #880E4F;">
+                                <i class="fas fa-female"></i> TALLAS PANTALÓN MUJER
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #AD1457; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">4</th>
+                            <th style="background: #AD1457; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">6</th>
+                            <th style="background: #AD1457; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">8</th>
+                            <th style="background: #AD1457; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">10</th>
+                            <th style="background: #AD1457; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">12</th>
+                            <th style="background: #AD1457; border-right: none; border-bottom: 2px solid #880E4F;">14</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: 2px solid #F48FB1;" id="tallaPM4Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: 2px solid #F48FB1;" id="tallaPM6Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: 2px solid #F48FB1;" id="tallaPM8Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: 2px solid #F48FB1;" id="tallaPM10Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: 2px solid #F48FB1;" id="tallaPM12Vista">0</td>
+                            <td style="border-right: none; border-bottom: 2px solid #F48FB1;" id="tallaPM14Vista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="tallas-table" style="border: 3px solid #880E4F; border-top: none; margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th style="background: #AD1457 !important; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">16</th>
+                            <th style="background: #AD1457 !important; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">18</th>
+                            <th style="background: #AD1457 !important; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">20</th>
+                            <th style="background: #AD1457 !important; border-right: 2px solid #880E4F; border-bottom: 2px solid #880E4F;">22</th>
+                            <th style="background: #AD1457 !important; border-right: none; border-bottom: 2px solid #880E4F;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: none;" id="tallaPM16Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: none;" id="tallaPM18Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: none;" id="tallaPM20Vista">0</td>
+                            <td style="border-right: 2px solid #F48FB1; border-bottom: none;" id="tallaPM22Vista">0</td>
+                            <td style="background: #F8BBD9 !important; font-weight: bold; font-size: 1.3rem; color: #AD1457 !important; border-right: none; border-bottom: none;" id="totalPantalonMujerVista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TALLAS PANTALÓN HOMBRE -->
+            <div id="seccion-pantalon-hombre-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #0D47A1; border-top: none; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th colspan="6" style="background: #1565C0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #0D47A1;">
+                                <i class="fas fa-male"></i> TALLAS PANTALÓN HOMBRE
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">26</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">28</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">30</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">32</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">34</th>
+                            <th style="background: #1565C0; border-right: none; border-bottom: 2px solid #0D47A1;">36</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="tallaPH26Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="tallaPH28Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="tallaPH30Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="tallaPH32Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: 2px solid #BBDEFB;" id="tallaPH34Vista">0</td>
+                            <td style="border-right: none; border-bottom: 2px solid #BBDEFB;" id="tallaPH36Vista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="tallas-table" style="border: 3px solid #0D47A1; border-top: none; margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">38</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">40</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">42</th>
+                            <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">44</th>
+                            <th style="background: #1565C0; border-right: none; border-bottom: 2px solid #0D47A1;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="tallaPH38Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="tallaPH40Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="tallaPH42Vista">0</td>
+                            <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="tallaPH44Vista">0</td>
+                            <td style="background: #E3F2FD !important; font-weight: bold; font-size: 1.3rem; color: #1565C0 !important; border-right: none; border-bottom: none;" id="totalPantalonHombreVista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TALLAS PANTALONETAS -->
+            <div id="seccion-pantalonetas-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #E65100; border-top: none; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th colspan="5" style="background: #FF9800; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #E65100;">
+                                <i class="fas fa-running"></i> TALLAS PANTALONETAS
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">S</th>
+                            <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">M</th>
+                            <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">L</th>
+                            <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">XL</th>
+                            <th style="background: #FF9800; border-right: none; border-bottom: 2px solid #E65100;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTSVista">0</td>
+                            <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTMVista">0</td>
+                            <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTLVista">0</td>
+                            <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTXLVista">0</td>
+                            <td style="background: #FFF3E0 !important; font-weight: bold; font-size: 1.3rem; color: #E65100 !important; border-right: none; border-bottom: none;" id="totalPantalonetasVista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TALLAS PIJAMAS -->
+            <div id="seccion-pijamas-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #6A1B9A; border-top: none; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th colspan="5" style="background: #9C27B0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #6A1B9A;">
+                                <i class="fas fa-bed"></i> TALLAS PIJAMAS
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #9C27B0; border-right: 2px solid #6A1B9A; border-bottom: 2px solid #6A1B9A;">S</th>
+                            <th style="background: #9C27B0; border-right: 2px solid #6A1B9A; border-bottom: 2px solid #6A1B9A;">M</th>
+                            <th style="background: #9C27B0; border-right: 2px solid #6A1B9A; border-bottom: 2px solid #6A1B9A;">L</th>
+                            <th style="background: #9C27B0; border-right: 2px solid #6A1B9A; border-bottom: 2px solid #6A1B9A;">XL</th>
+                            <th style="background: #9C27B0; border-right: none; border-bottom: 2px solid #6A1B9A;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #E1BEE7; border-bottom: none;" id="tallaPJSVista">0</td>
+                            <td style="border-right: 2px solid #E1BEE7; border-bottom: none;" id="tallaPJMVista">0</td>
+                            <td style="border-right: 2px solid #E1BEE7; border-bottom: none;" id="tallaPJLVista">0</td>
+                            <td style="border-right: 2px solid #E1BEE7; border-bottom: none;" id="tallaPJXLVista">0</td>
+                            <td style="background: #F3E5F5 !important; font-weight: bold; font-size: 1.3rem; color: #6A1B9A !important; border-right: none; border-bottom: none;" id="totalPijamasVista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TALLAS SUDADERAS -->
+            <div id="seccion-sudaderas-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #1B5E20; border-top: none; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th colspan="5" style="background: #2E7D32; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #1B5E20;">
+                                <i class="fas fa-wind"></i> TALLAS SUDADERAS/JOGGERS
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #2E7D32; border-right: 2px solid #1B5E20; border-bottom: 2px solid #1B5E20;">S</th>
+                            <th style="background: #2E7D32; border-right: 2px solid #1B5E20; border-bottom: 2px solid #1B5E20;">M</th>
+                            <th style="background: #2E7D32; border-right: 2px solid #1B5E20; border-bottom: 2px solid #1B5E20;">L</th>
+                            <th style="background: #2E7D32; border-right: 2px solid #1B5E20; border-bottom: 2px solid #1B5E20;">XL</th>
+                            <th style="background: #2E7D32; border-right: none; border-bottom: 2px solid #1B5E20;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #A5D6A7; border-bottom: none;" id="tallaSDSVista">0</td>
+                            <td style="border-right: 2px solid #A5D6A7; border-bottom: none;" id="tallaSDMVista">0</td>
+                            <td style="border-right: 2px solid #A5D6A7; border-bottom: none;" id="tallaSDLVista">0</td>
+                            <td style="border-right: 2px solid #A5D6A7; border-bottom: none;" id="tallaSDXLVista">0</td>
+                            <td style="background: #E8F5E9 !important; font-weight: bold; font-size: 1.3rem; color: #2E7D32 !important; border-right: none; border-bottom: none;" id="totalSudaderasVista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TALLAS CHAQUETAS -->
+            <div id="seccion-chaquetas-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #311B92; border-top: none; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th colspan="5" style="background: #4527A0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #311B92;">
+                                <i class="fas fa-user-tie"></i> TALLAS CHAQUETAS
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">S</th>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">M</th>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">L</th>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">XL</th>
+                            <th style="background: #4527A0; border-right: none; border-bottom: 2px solid #311B92;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHSVista">0</td>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHMVista">0</td>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHLVista">0</td>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHXLVista">0</td>
+                            <td style="background: #EDE7F6 !important; font-weight: bold; font-size: 1.3rem; color: #4527A0 !important; border-right: none; border-bottom: none;" id="totalChaquetasVista">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CANTIDAD TOTAL (solo si NO tiene tallas) -->
+        <div id="seccion-cantidad-simple" style="display: none;">
+            <table class="tallas-table">
+                <thead>
+                    <tr>
+                        <th style="background: #1565C0; padding: 12px; font-size: 1.1rem;">CANTIDAD TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-size: 2rem; font-weight: bold; color: #2196F3; padding: 30px;" id="cantidadTotalDisplay">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- TOTAL GENERAL -->
+        <div class="total-general">
+            TOTAL PEDIDO GENERAL: <span id="totalGeneral">0</span>
+        </div>
+
+        <!-- OBSERVACIONES -->
+        <div class="bottom-card">
+            <div class="spec-header" style="border-radius:8px;margin-bottom:10px;">OBSERVACIONES</div>
+            <div class="observaciones-box" id="observacionesTexto">Sin observaciones</div>
+        </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="acciones-orden">
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        <button class="btn btn-success" onclick="descargarPDF()">
+            <i class="fas fa-file-pdf"></i> Descargar PDF
+        </button>
+        <button class="btn btn-secondary" id="btnVolver" onclick="history.back()">
+            <i class="fas fa-arrow-left"></i> Volver
+        </button>
+    </div>
+
+    <script>
+        // Obtener parámetro de URL o cargar última orden
+        const urlParams = new URLSearchParams(window.location.search);
+        const numeroOrden = urlParams.get('orden');
+
+        async function cargarOrden() {
+            const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            let orden;
+
+            if (numeroOrden) {
+                orden = ordenes.find(o => o.numeroOrden === numeroOrden);
+
+                // Si no está en activas, buscar en historial Supabase
+                if (!orden) {
+                    try {
+                        const historial = await window.DB.obtenerHistorial();
+                        const itemHistorial = historial.find(h => h.numero_orden === numeroOrden);
+                        if (itemHistorial) orden = itemHistorial.datos_completos;
+                    } catch(e) {
+                        console.error('Error buscando en historial:', e);
+                    }
+                }
+
+                // Fallback localStorage historial
+                if (!orden) {
+                    const historialLocal = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+                    orden = historialLocal.find(o => o.numeroOrden === numeroOrden);
+                }
+            } else {
+                orden = ordenes[ordenes.length - 1];
+            }
+
+            if (!orden) {
+                alert('No se encontró la orden');
+                window.location.href = 'dashboard-jefe.html';
+                return;
+            }
+
+            // Llenar información básica
+            if (document.getElementById('infoNumeroOrden')) {
+                document.getElementById('infoNumeroOrden').textContent = orden.numeroOrden;
+            }
+            document.getElementById('infoCliente').textContent = orden.cliente;
+            document.getElementById('infoArte').textContent = orden.arte || '-';
+            document.getElementById('infoFechaPedido').textContent = formatearFecha(orden.fechaPedido);
+            document.getElementById('infoFechaEntrega').textContent = formatearFecha(orden.fechaEntrega);
+
+            // Especificaciones (con validación)
+            if (document.getElementById('specImpresora')) {
+                document.getElementById('specImpresora').textContent = orden.impresora || '-';
+            }
+            if (document.getElementById('specTela')) {
+                document.getElementById('specTela').textContent = orden.tela || '-';
+            }
+            if (document.getElementById('specCuello')) {
+                document.getElementById('specCuello').textContent = orden.cuello || '-';
+            }
+            if (document.getElementById('specColorCuello')) {
+                document.getElementById('specColorCuello').textContent = orden.colorCuello || '-';
+            }
+            if (document.getElementById('specMarquilla')) {
+                document.getElementById('specMarquilla').textContent = orden.marquilla || '-';
+            }
+            if (document.getElementById('specAncho')) {
+                document.getElementById('specAncho').textContent = orden.ancho || '-';
+            }
+            if (document.getElementById('specMolde')) {
+                document.getElementById('specMolde').textContent = orden.molde || '-';
+            }
+            if (document.getElementById('specAnchoBies')) {
+                document.getElementById('specAnchoBies').textContent = orden.anchoBies || '-';
+            }
+            if (document.getElementById('specDobladillo')) {
+                document.getElementById('specDobladillo').textContent = orden.dobladillo || '-';
+            }
+
+            // Descripción Pedido
+            if (document.getElementById('infoDescripcionPedido')) {
+                let descripcionCompleta = orden.tipoPrenda || '';
+                if (orden.descripcionPedido) {
+                    descripcionCompleta += ' - ' + orden.descripcionPedido;
+                }
+                document.getElementById('infoDescripcionPedido').textContent = descripcionCompleta || '-';
+            }
+
+            // Requerimientos con checkboxes marcados
+            if (orden.requerimientos) {
+                if (document.getElementById('reqCorte')) {
+                    document.getElementById('reqCorte').checked = orden.requerimientos.corte || false;
+                }
+                if (document.getElementById('reqImpresion')) {
+                    document.getElementById('reqImpresion').checked = orden.requerimientos.impresion || false;
+                }
+                if (document.getElementById('reqSublimacion')) {
+                    document.getElementById('reqSublimacion').checked = orden.requerimientos.sublimacion || false;
+                }
+                if (document.getElementById('reqEstampado')) {
+                    document.getElementById('reqEstampado').checked = orden.requerimientos.estampado || false;
+                }
+                if (document.getElementById('reqConfeccion')) {
+                    document.getElementById('reqConfeccion').checked = orden.requerimientos.confeccion || false;
+                }
+                if (document.getElementById('reqDTF')) {
+                    document.getElementById('reqDTF').checked = orden.requerimientos.dtf || false;
+                }
+                if (document.getElementById('reqCorteLaser')) {
+                    document.getElementById('reqCorteLaser').checked = orden.requerimientos.corteLaser || false;
+                }
+                if (document.getElementById('reqDespacho')) {
+                    document.getElementById('reqDespacho').checked = orden.requerimientos.despacho || false;
+                }
+            }
+
+            // Imagen de diseño
+            if (orden.imagenDiseno && document.getElementById('disenoSection')) {
+                document.getElementById('disenoSection').innerHTML = `
+                    <img src="${orden.imagenDiseno}" class="diseno-imagen" alt="Diseño">
+                `;
+            }
+
+            // Tallas o Cantidad Total
+            // Tallas o Cantidad Total
+            if (orden.cantidadTotal !== undefined && orden.cantidadTotal > 0) {
+                // Producto con cantidad manual (Totebag, Gorra, etc.)
+                if (document.getElementById('seccion-tallas')) {
+                    document.getElementById('seccion-tallas').style.display = 'none';
+                }
+                if (document.getElementById('seccion-cantidad-simple')) {
+                    document.getElementById('seccion-cantidad-simple').style.display = 'block';
+                }
+                if (document.getElementById('cantidadTotalDisplay')) {
+                    document.getElementById('cantidadTotalDisplay').textContent = orden.cantidadTotal;
+                }
+                if (document.getElementById('totalGeneral')) {
+                    document.getElementById('totalGeneral').textContent = orden.cantidadTotal;
+                }
+            } else {
+                // Producto con tallas
+                if (document.getElementById('seccion-tallas')) {
+                    document.getElementById('seccion-tallas').style.display = 'block';
+                }
+                if (document.getElementById('seccion-cantidad-simple')) {
+                    document.getElementById('seccion-cantidad-simple').style.display = 'none';
+                }
+                
+                let totalInfantil = 0;
+                let totalAdulto = 0;
+                let totalGeneral = 0;
+
+                Object.keys(orden.tallas || {}).forEach(talla => {
+                    const cantidad = orden.tallas[talla];
+                    const elementId = 'cant' + talla;
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.textContent = cantidad;
+                        totalGeneral += cantidad;
+                        
+                        // Sumar a infantil o adulto según la talla
+                        if (['2T', '3T', '4T', '5T', '2', '4', '6', '8', '10', '12', '14', '16'].includes(talla)) {
+                            totalInfantil += cantidad;
+                        } else if (['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'].includes(talla)) {
+                            totalAdulto += cantidad;
+                        }
+                    }
+                });
+
+                // ==========================================
+                // CARGAR TALLAS NUEVAS
+                // ==========================================
+
+                // Tallas Pantalón Mujer
+                const tallasPM = ['PM-4', 'PM-6', 'PM-8', 'PM-10', 'PM-12', 'PM-14', 'PM-16', 'PM-18', 'PM-20', 'PM-22'];
+                let totalPM = 0;
+                let tienePM = false;
+
+                tallasPM.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalPM += cantidad;
+                    if (cantidad > 0) tienePM = true;
+                    const id = 'talla' + talla.replace('-', '') + 'Vista';
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tienePM) {
+                    const seccion = document.getElementById('seccion-pantalon-mujer-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalPantalonMujerVista');
+                    if (totalElem) totalElem.textContent = totalPM;
+                }
+
+                // Tallas Pantalón Hombre
+                const tallasPH = ['PH-26', 'PH-28', 'PH-30', 'PH-32', 'PH-34', 'PH-36', 'PH-38', 'PH-40', 'PH-42', 'PH-44'];
+                let totalPH = 0;
+                let tienePH = false;
+
+                tallasPH.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalPH += cantidad;
+                    if (cantidad > 0) tienePH = true;
+                    const id = 'talla' + talla.replace('-', '') + 'Vista';
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tienePH) {
+                    const seccion = document.getElementById('seccion-pantalon-hombre-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalPantalonHombreVista');
+                    if (totalElem) totalElem.textContent = totalPH;
+                }
+
+                // Tallas Pantalonetas
+                const tallasPT = ['PT-S', 'PT-M', 'PT-L', 'PT-XL'];
+                let totalPT = 0;
+                let tienePT = false;
+
+                tallasPT.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalPT += cantidad;
+                    if (cantidad > 0) tienePT = true;
+                    const id = 'talla' + talla.replace('-', '') + 'Vista';
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tienePT) {
+                    const seccion = document.getElementById('seccion-pantalonetas-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalPantalonetasVista');
+                    if (totalElem) totalElem.textContent = totalPT;
+                }
+
+                // Tallas Pijamas
+                const tallasPJ = ['PJ-S', 'PJ-M', 'PJ-L', 'PJ-XL'];
+                let totalPJ = 0;
+                let tienePJ = false;
+
+                tallasPJ.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalPJ += cantidad;
+                    if (cantidad > 0) tienePJ = true;
+                    const id = 'talla' + talla.replace('-', '') + 'Vista';
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tienePJ) {
+                    const seccion = document.getElementById('seccion-pijamas-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalPijamasVista');
+                    if (totalElem) totalElem.textContent = totalPJ;
+                }
+
+                // Tallas Sudaderas
+                const tallasSD = ['SD-S', 'SD-M', 'SD-L', 'SD-XL'];
+                let totalSD = 0;
+                let tieneSD = false;
+
+                tallasSD.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalSD += cantidad;
+                    if (cantidad > 0) tieneSD = true;
+                    const id = 'tallaSD' + talla.split('-')[1] + 'Vista';
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tieneSD) {
+                    const seccion = document.getElementById('seccion-sudaderas-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalSudaderasVista');
+                    if (totalElem) totalElem.textContent = totalSD;
+                }
+
+                // Tallas Chaquetas
+                const tallasCH = ['CH-S', 'CH-M', 'CH-L', 'CH-XL'];
+                let totalCH = 0;
+                let tieneCH = false;
+
+                tallasCH.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalCH += cantidad;
+                    if (cantidad > 0) tieneCH = true;
+                    const id = 'talla' + talla.replace('-', '') + 'Vista';
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tieneCH) {
+                    const seccion = document.getElementById('seccion-chaquetas-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalChaquetasVista');
+                    if (totalElem) totalElem.textContent = totalCH;
+                }
+                // Ocultar Infantil/Adulto si tiene otras tallas
+                    if (tienePM || tienePH || tienePT || tienePJ || tieneSD || tieneCH) {
+                        const seccionInfantil = document.getElementById('seccion-infantil-vista');
+                        const seccionAdulto = document.getElementById('seccion-adulto-vista');
+                        if (seccionInfantil) seccionInfantil.style.display = 'none';
+                        if (seccionAdulto) seccionAdulto.style.display = 'none';
+                    }
+
+                // Actualizar total general incluyendo tallas nuevas
+                totalGeneral += totalPM + totalPH + totalPT + totalPJ + totalSD + totalCH;
+
+                if (document.getElementById('totalInfantil')) {
+                    document.getElementById('totalInfantil').textContent = totalInfantil;
+                }
+                if (document.getElementById('totalAdulto')) {
+                    document.getElementById('totalAdulto').textContent = totalAdulto;
+                }
+                if (document.getElementById('totalGeneral')) {
+                    document.getElementById('totalGeneral').textContent = totalGeneral;
+                }
+            }
+
+            // Observaciones
+            if (orden.observaciones && document.getElementById('observacionesTexto')) {
+                document.getElementById('observacionesTexto').textContent = orden.observaciones;
+            }
+
+            // Actualizar título
+            document.title = `Orden ${orden.numeroOrden} - ${orden.cliente}`;
+        }
+
+        function formatearFecha(fecha) {
+            const date = new Date(fecha + 'T00:00:00');
+            return date.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function descargarPDF() {
+            const elemento = document.querySelector('.orden-documento');
+            elemento.style.border = '3px solid #1565C0';
+            elemento.style.borderRadius = '0';
+
+            // Forzar color sólido en elementos con gradiente
+            const gradientes = document.querySelectorAll('.spec-header, .total-general, .info-seccion-header');
+            const estilosOriginales = [];
+            gradientes.forEach(el => {
+                estilosOriginales.push(el.style.background);
+                el.style.background = '#1565C0';
+            });
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            doc.html(elemento, {
+                callback: function(doc) {
+                    elemento.style.border = '';
+                    elemento.style.borderRadius = '';
+                    // Restaurar estilos originales
+                    gradientes.forEach((el, i) => {
+                        el.style.background = estilosOriginales[i];
+                    });
+                    doc.save(`Orden_${document.getElementById('infoNumeroOrden')?.textContent || 'produccion'}.pdf`);
+                },
+                x: 10,
+                y: 10,
+                width: 190,
+                windowWidth: 1000,
+                html2canvas: {
+                    scale: 0.18,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                }
+            });
+        }
+
+        const origenParam = new URLSearchParams(window.location.search).get('origen');
+        const btnVolver = document.getElementById('btnVolver');
+
+        if (origenParam === 'tablet' || origenParam === 'historial') {
+            btnVolver.innerHTML = '<i class="fas fa-times"></i> Cerrar';
+            btnVolver.onclick = () => window.close();
+        } else if (window.history.length <= 1) {
+            btnVolver.innerHTML = '<i class="fas fa-tv"></i> Dashboard';
+            btnVolver.onclick = () => window.location.href = 'dashboard-jefe.html';
+        } else {
+            btnVolver.onclick = () => history.back();
+        }
+
+        // Cargar al iniciar
+        cargarOrden();
+    </script>
+</body>
+
+</html>

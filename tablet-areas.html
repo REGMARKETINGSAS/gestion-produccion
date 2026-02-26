@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablet Área - REG Marketing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <script src="database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --blue: #1565C0;
+            --blue-dark: #0D47A1;
+            --blue-mid: #1976D2;
+            --text: #1A2332;
+            --text-light: #607D8B;
+        }
+
+        html, body { min-height: 100vh; font-family: 'Outfit', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #0D47A1 0%, #1565C0 45%, #1976D2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px 50px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Círculos animados de fondo */
+        .bg-circles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .bg-circles span {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            animation: floatUp linear infinite;
+        }
+        .bg-circles span:nth-child(1){ width:80px;  height:80px;  left:7%;  animation-duration:20s; animation-delay:0s; }
+        .bg-circles span:nth-child(2){ width:30px;  height:30px;  left:20%; animation-duration:14s; animation-delay:3s; }
+        .bg-circles span:nth-child(3){ width:55px;  height:55px;  left:63%; animation-duration:18s; animation-delay:6s; }
+        .bg-circles span:nth-child(4){ width:120px; height:120px; left:80%; animation-duration:25s; animation-delay:1s; }
+        .bg-circles span:nth-child(5){ width:22px;  height:22px;  left:45%; animation-duration:12s; animation-delay:8s; }
+        .bg-circles span:nth-child(6){ width:65px;  height:65px;  left:33%; animation-duration:21s; animation-delay:4s; }
+
+        @keyframes floatUp {
+            0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
+            8%   { opacity: 1; }
+            92%  { opacity: 1; }
+            100% { transform: translateY(-10vh) rotate(540deg); opacity: 0; }
+        }
+
+        /* Wrapper principal */
+        .wrapper {
+            position: relative; z-index: 1; width: 100%; max-width: 920px;
+            animation: pageIn 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes pageIn {
+            from { opacity:0; transform:translateY(24px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        @keyframes barraAnimada {
+            from { background-position: 0 0; }
+            to   { background-position: 20px 0; }
+        }
+
+        .paquete-header-tablet {
+            border-radius: 14px;
+            transition: border-radius 0.3s ease;
+        }
+        .paquete-header-tablet.abierto {
+            border-radius: 14px 14px 0 0;
+        }
+
+        /* Header de página */
+        .page-header { text-align: center; margin-bottom: 28px; }
+        .logo-wrap {
+            width: 82px; height: 82px;
+            background: rgba(255,255,255,0.92);
+            border: 3px solid rgba(255,255,255,0.95);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .logo-wrap img { width: 52px; height: 52px; object-fit: contain; }
+        .logo-wrap i   { font-size: 2rem; color: white; display: none; }
+        .page-header h1 {
+            font-size: 1.9rem; font-weight: 800; color: white;
+            letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .page-header .sub { font-size: 0.9rem; color: rgba(255,255,255,0.75); margin-top: 3px; }
+
+        /* Card */
+        .card {
+            background: white; border-radius: 24px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+            overflow: hidden; margin-bottom: 20px;
+        }
+        .card-top {
+            background: linear-gradient(135deg, #0D47A1, #1976D2);
+            padding: 22px 28px 42px; position: relative; overflow: hidden;
+        }
+        .card-top::after {
+            content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+            height: 32px; background: white;
+            border-radius: 60% 60% 0 0 / 100% 100% 0 0;
+        }
+        .card-top h2 { color: white; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .card-top p  { color: rgba(255,255,255,0.75); font-size: 0.82rem; margin-top: 4px; padding-left: 28px; }
+        .card-body   { padding: 6px 28px 26px; }
+        .card-footer-actions {
+            padding: 0 28px 24px;
+            display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+        }
+
+        /* Botones del área selector */
+        .area-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+        .area-selector-fila2 {
+            display: flex; justify-content: center;
+            gap: 14px; margin-top: 14px;
+        }
+        .area-selector-fila2 .area-btn { width: calc(25% - 11px); }
+
+        .area-btn {
+            position: relative;
+            border: 2.5px solid #E8EDF2; border-radius: 16px;
+            background: #FAFBFC; cursor: pointer;
+            padding: 22px 10px 16px; text-align: center;
+            transition: all 0.28s cubic-bezier(0.4,0,0.2,1);
+            overflow: hidden; outline: none;
+        }
+        .area-btn:nth-child(1){ animation-delay:0.05s; }
+        .area-btn:nth-child(2){ animation-delay:0.10s; }
+        .area-btn:nth-child(3){ animation-delay:0.15s; }
+        .area-btn:nth-child(4){ animation-delay:0.20s; }
+
+        @keyframes cardFadeIn {
+            from { opacity:0; transform:translateY(14px) scale(0.97); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+
+        .area-btn[data-area="corte"]       { --c:#1565C0; }
+        .area-btn[data-area="confeccion"]  { --c:#2E7D32; }
+        .area-btn[data-area="impresion"]   { --c:#E65100; }
+        .area-btn[data-area="sublimacion"] { --c:#6A1B9A; }
+        .area-btn[data-area="dtf"]         { --c:#AD1457; }
+        .area-btn[data-area="estampado"]   { --c:#BF360C; }
+        .area-btn[data-area="corteLaser"]  { --c:#4527A0; }
+        .area-btn[data-area="despacho"]    { --c:#00695C; }
+
+        .area-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.13);
+            border-color: var(--c, #1565C0);
+        }
+        .area-btn:active { transform: translateY(-2px); }
+
+        .area-icon {
+            width: 54px; height: 54px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px; font-size: 1.5rem; color: white;
+            background: var(--c, #1565C0);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+        }
+        .area-btn:hover .area-icon { transform: scale(1.12) rotate(-5deg); }
+        .area-label { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+        .area-sub   { font-size: 0.72rem; color: var(--text-light); margin-top: 3px; }
+
+        /* Botones generales */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 22px; border: none; border-radius: 10px;
+            font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 600;
+            cursor: pointer; transition: all 0.25s ease; text-decoration: none;
+        }
+        .btn-primary   { background: linear-gradient(135deg,#0D47A1,#1976D2); color:white; box-shadow:0 4px 14px rgba(13,71,161,0.35); }
+        .btn-primary:hover   { transform:translateY(-2px); box-shadow:0 7px 20px rgba(13,71,161,0.45); }
+        .btn-success   { background: linear-gradient(135deg,#2E7D32,#43A047); color:white; box-shadow:0 4px 14px rgba(46,125,50,0.35); }
+        .btn-success:hover   { transform:translateY(-2px); box-shadow:0 7px 20px rgba(46,125,50,0.45); }
+        .btn-danger    { background: linear-gradient(135deg,#C62828,#E53935); color:white; box-shadow:0 4px 14px rgba(198,40,40,0.35); }
+        .btn-danger:hover    { transform:translateY(-2px); box-shadow:0 7px 20px rgba(198,40,40,0.45); }
+        .btn-secondary { background:#607D8B; color:white; }
+        .btn-secondary:hover { background:#546E7A; transform:translateY(-2px); }
+        .btn-outline   { background:transparent; border:2px solid rgba(255,255,255,0.45); color:white; backdrop-filter:blur(4px); }
+        .btn-outline:hover   { background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.7); transform:translateY(-2px); }
+
+        /* Header del área activa */
+        .area-header-bar {
+            border-radius: 20px; padding: 18px 26px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+            animation: slideDown 0.4s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);} }
+        .area-title { color:white; font-size:1.35rem; font-weight:800; display:flex; align-items:center; gap:12px; }
+        .area-title-icon {
+            width:44px; height:44px; background:rgba(255,255,255,0.2);
+            border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;
+        }
+        .area-header-actions { display:flex; gap:10px; flex-wrap:wrap; }
+
+        /* Órdenes de trabajo */
+        .orden-trabajo {
+            background: white; border-radius: 18px; padding: 24px;
+            margin-bottom: 16px; border-left: 5px solid #1565C0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+            transition: all 0.3s ease;
+        }
+        @keyframes orderIn { from{opacity:0;transform:translateX(-14px);}to{opacity:1;transform:translateX(0);} }
+        .orden-trabajo:hover { box-shadow:0 10px 30px rgba(0,0,0,0.14); transform:translateX(4px); }
+        .orden-trabajo.completada { opacity:0.6; border-left-color:#4CAF50; background:#f8fff8; }
+        .orden-numero-grande { font-size:1.8rem; font-weight:800; color:#1565C0; display:flex; align-items:center; gap:14px; }
+
+        /* Info área */
+        .info-area {
+            background: #F8FAFC; border: 1.5px solid #E8EDF5;
+            border-radius: 14px; padding: 18px; margin: 14px 0;
+        }
+        .info-area h4 { color:#1565C0; font-size:1rem; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+        .detalle-item { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid #EEF2F7; font-size:0.9rem; }
+        .detalle-item:last-child { border-bottom:none; }
+        .detalle-label { font-weight:600; color:#607D8B; }
+        .detalle-value { color:#1A2332; font-weight:500; }
+
+        /* Tallas */
+        .tallas-progreso-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .tallas-progreso-grid .talla-progreso-card {
+            width: auto;
+        }
+        .talla-progreso-card {
+            background: white;
+            border: 2px solid #E8EDF2;
+            border-radius: 14px;
+            padding: 18px 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .talla-progreso-card.completada  { border-color:#4CAF50; background:#f1fff3; }
+        .talla-progreso-card.en-progreso { border-color:#FF9800; background:#fff9f0; }
+        .talla-nombre { font-weight:800; font-size:1.15rem; margin-bottom:8px; }
+
+        .talla-input-group { display:flex; gap:5px; justify-content:center; margin-top:10px; }
+        .talla-input-group input {
+            width:65px; padding:7px 4px; text-align:center;
+            border:2px solid #ddd; border-radius:8px;
+            font-weight:700; font-size:0.95rem; font-family:'Outfit',sans-serif;
+            outline:none; transition:border-color 0.2s;
+        }
+        .talla-input-group input:focus { border-color:#1565C0; }
+        .btn-agregar-talla {
+            padding:7px 12px; border:none; border-radius:8px;
+            background:#4CAF50; color:white; cursor:pointer;
+            font-weight:700; font-size:1rem; transition:all 0.2s;
+        }
+        .btn-agregar-talla:hover { background:#388E3C; transform:scale(1.08); }
+
+        .btn-completar-orden {
+            background: linear-gradient(135deg,#2E7D32,#43A047); color:white;
+            padding:13px 28px; border-radius:12px; border:none; cursor:pointer;
+            font-weight:700; font-size:1rem; font-family:'Outfit',sans-serif;
+            display:inline-flex; align-items:center; gap:10px;
+            transition:all 0.3s; box-shadow:0 4px 16px rgba(46,125,50,0.35);
+        }
+        .btn-completar-orden:hover { transform:translateY(-3px); box-shadow:0 8px 22px rgba(46,125,50,0.45); }
+
+        .orden-trabajo button[onclick*="iniciarOrden"]:hover,
+        .orden-trabajo button[onclick*="completarOrdenArea"]:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.08);
+        }
+
+        .btn-ver-orden {
+            background: linear-gradient(135deg,#0D47A1,#1976D2); color:white;
+            padding:9px 18px; border-radius:9px; border:none; cursor:pointer;
+            font-weight:600; font-size:0.88rem; font-family:'Outfit',sans-serif;
+            display:inline-flex; align-items:center; gap:7px;
+            transition:all 0.25s; box-shadow:0 3px 10px rgba(13,71,161,0.28);
+        }
+        .btn-ver-orden:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(13,71,161,0.38); }
+
+        /* Empty state */
+        .empty-state {
+            text-align:center; padding:60px 30px; background:white;
+            border-radius:18px; box-shadow:0 8px 24px rgba(0,0,0,0.1);
+        }
+        .empty-state i { font-size:4rem; color:#4CAF50; margin-bottom:16px; display:block; }
+        .empty-state h3 { color:#1A2332; margin-bottom:8px; font-size:1.3rem; }
+        .empty-state p  { color:#607D8B; font-size:1rem; }
+
+        /* Notificaciones */
+        .notification {
+            position:fixed; top:20px; right:20px; padding:14px 22px;
+            border-radius:12px; color:white; font-weight:600;
+            font-family:'Outfit',sans-serif;
+            box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:9999;
+            animation:slideIn 0.3s ease; max-width:340px;
+        }
+        .notification.success { background:linear-gradient(135deg,#2E7D32,#43A047); }
+        .notification.error   { background:linear-gradient(135deg,#C62828,#E53935); }
+        .notification.info    { background:linear-gradient(135deg,#0D47A1,#1976D2); }
+        @keyframes slideIn  { from{transform:translateX(110%);opacity:0;} to{transform:translateX(0);opacity:1;} }
+        @keyframes slideOut { from{transform:translateX(0);opacity:1;} to{transform:translateX(110%);opacity:0;} }
+
+        @media (max-width: 640px) {
+            .area-selector { grid-template-columns: repeat(2,1fr); }
+            .area-selector-fila2 .area-btn { width:calc(50% - 7px); }
+            .page-header h1 { font-size:1.5rem; }
+            .card-body { padding:6px 18px 22px; }
+            .tallas-progreso-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+        }
+
+        @media (max-width: 480px) {
+            .area-selector { grid-template-columns: repeat(2,1fr); gap:10px; }
+            .area-btn { padding:16px 8px 12px; }
+            .area-icon { width:44px; height:44px; font-size:1.2rem; }
+            .orden-trabajo { padding:16px; }
+            .tallas-progreso-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+        }
+
+        @media (min-width: 1200px) {
+            .wrapper { max-width: 1100px; }
+            .tallas-progreso-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+        }
+
+        @media (min-width: 1400px) {
+            body { font-size: 1.05rem; }
+            .wrapper { max-width: 1200px; }
+            .area-btn { padding:26px 12px 20px; }
+            .area-icon { width:62px; height:62px; font-size:1.7rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="wrapper">
+
+        <div class="page-header">
+            <div class="logo-wrap">
+                <img src="logo.png" alt="REG" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                <i class="fas fa-industry" style="display:none;"></i>
+            </div>
+            <h1 style="font-family:'Outfit',sans-serif; font-size:2.2rem; font-weight:800; color:white; letter-spacing:2px; text-align:center; text-shadow:0 2px 12px rgba(0,0,0,0.25); margin-bottom:4px;">REG MARKETING</h1>
+            <p style="color:rgba(255,255,255,0.8); font-size:0.95rem; text-align:center; font-family:'Outfit',sans-serif;">S.A.S — Sistema de Producción por Áreas</p>
+        </div>
+
+        <!-- SELECTOR DE ÁREA -->
+        <div id="selectorArea">
+            <div class="card">
+                <div class="card-top">
+                    <h2><i class="fas fa-hand-pointer"></i> Selecciona tu Área de Trabajo</h2>
+                    <p>Toca el área en la que vas a trabajar hoy</p>
+                </div>
+                <div class="card-body">
+                    <div class="area-selector">
+                        <button class="area-btn" data-area="corte" onclick="seleccionarArea('corte')">
+                            <div class="area-icon"><i class="fas fa-cut"></i></div>
+                            <div class="area-label">Corte</div>
+                            <div class="area-sub">Tela y patrones</div>
+                        </button>
+                        <button class="area-btn" data-area="confeccion" onclick="seleccionarArea('confeccion')">
+                            <div class="area-icon"><i class="fas fa-tshirt"></i></div>
+                            <div class="area-label">Confección</div>
+                            <div class="area-sub">Ensamble de prendas</div>
+                        </button>
+                        <button class="area-btn" data-area="impresion" onclick="seleccionarArea('impresion')">
+                            <div class="area-icon"><i class="fas fa-print"></i></div>
+                            <div class="area-label">Impresión</div>
+                            <div class="area-sub">Para Sublimado</div>
+                        </button>
+                        <button class="area-btn" data-area="sublimacion" onclick="seleccionarArea('sublimacion')">
+                            <div class="area-icon"><i class="fas fa-fill-drip"></i></div>
+                            <div class="area-label">Sublimación</div>
+                            <div class="area-sub">Transferencia térmica</div>
+                        </button>
+                    </div>
+                    <div class="area-selector-fila2">
+                        <button class="area-btn" data-area="dtf" onclick="seleccionarArea('dtf')">
+                            <div class="area-icon"><i class="fas fa-layer-group"></i></div>
+                            <div class="area-label">DTF</div>
+                            <div class="area-sub">Transfer directo</div>
+                        </button>
+                        <button class="area-btn" data-area="estampado" onclick="seleccionarArea('estampado')">
+                            <div class="area-icon"><i class="fas fa-stamp"></i></div>
+                            <div class="area-label">Estampado</div>
+                            <div class="area-sub">Serigrafía</div>
+                        </button>
+                        <button class="area-btn" data-area="corteLaser" onclick="seleccionarArea('corteLaser')">
+                            <div class="area-icon"><i class="fas fa-crosshairs"></i></div>
+                            <div class="area-label">Corte Láser</div>
+                            <div class="area-sub">Corte de precisión</div>
+                        </button>
+                        <button class="area-btn" data-area="despacho" onclick="seleccionarArea('despacho')">
+                            <div class="area-icon"><i class="fas fa-shipping-fast"></i></div>
+                            <div class="area-label">Despacho</div>
+                            <div class="area-sub">Empaque y envío</div>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-footer-actions">
+                    <div id="btnSistemaPrincipal"></div>
+                    <button class="btn btn-danger" onclick="cerrarSesionTrabajador()">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA DEL ÁREA -->
+        <div id="vistaArea" style="display:none;">
+            <div class="area-header-bar" id="areaHeaderBar">
+                <div class="area-title">
+                    <div class="area-title-icon"><i id="areaIconHeader" class="fas fa-cog"></i></div>
+                    <span id="areaNombre">Área</span>
+                </div>
+                <div class="area-header-actions">
+                    <button class="btn btn-outline" onclick="volverSelector()">
+                        <i class="fas fa-exchange-alt"></i> Cambiar Área
+                    </button>
+                    <button class="btn btn-danger" onclick="cerrarSesionTrabajador()">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+            <div id="listaOrdenes"></div>
+        </div>
+
+
+    </div>
+
+    <script>
+        let areaActual = null;
+        let procesandoProgreso = false;
+        if (sessionStorage.getItem('jefeAutenticado') === 'true') {
+            document.getElementById('btnSistemaPrincipal').innerHTML = `
+                <a href="inicio.html" class="btn btn-secondary" style="text-decoration:none;">
+                    <i class="fas fa-home"></i> Sistema Principal
+                </a>`;
+        }
+        
+
+        const areasInfo = {
+            corte: {
+                nombre: 'Área de Corte',
+                icon: 'cut',
+                campos: ['tela', 'ancho', 'molde', 'tipoPrenda']
+            },
+            confeccion: {
+                nombre: 'Área de Confección',
+                icon: 'tshirt',
+                campos: ['tipoPrenda', 'cuello', 'colorCuello', 'dobladillo', 'anchoBies']
+            },
+            impresion: {
+                nombre: 'Área de Impresión',
+                icon: 'print',
+                campos: ['tipoPrenda', 'impresora', 'arte']
+            },
+            sublimacion: {
+                nombre: 'Área de Sublimación',
+                icon: 'fill-drip',
+                campos: ['tipoPrenda', 'tela', 'arte']
+            },
+            despacho: {
+                nombre: 'Área de Despacho',
+                icon: 'shipping-fast',
+                campos: ['cliente', 'fechaEntrega', 'marquilla', 'tipoPrenda']
+            },
+            dtf: {
+                nombre: 'Área DTF',
+                icon: 'layer-group',
+                campos: ['arte', 'tipoPrenda']
+            },
+            estampado: {
+                nombre: 'Área de Estampado',
+                icon: 'stamp',
+                campos: ['arte', 'tipoPrenda']
+            },
+            corteLaser: {
+                nombre: 'Área Corte Láser',
+                icon: 'crosshairs',
+                campos: ['tipoPrenda', 'molde', 'ancho']
+            },
+        };
+
+        function seleccionarArea(area) {
+            areaActual = area;
+            localStorage.setItem('areaSeleccionada', area);
+            const info = areasInfo[area];
+
+            document.getElementById('selectorArea').style.display = 'none';
+            document.getElementById('vistaArea').style.display = 'block';
+            document.getElementById('areaNombre').textContent = info.nombre;
+            document.getElementById('areaIconHeader').className = `fas fa-${info.icon}`;
+            document.getElementById('areaHeaderBar').style.background =
+                `linear-gradient(135deg, ${info.color}ee, ${info.color})`;
+
+            cargarOrdenes();
+            mostrarNotificacion(`✅ ${info.nombre} activada`, 'success');
+        }
+
+        function volverSelector() {
+            areaActual = null;
+            localStorage.removeItem('areaSeleccionada');
+            document.getElementById('selectorArea').style.display = 'block';
+            document.getElementById('vistaArea').style.display = 'none';
+        }
+
+        async function cargarOrdenes() {
+            // Sincronizar desde Supabase primero
+            try {
+                const ordenesSupabase = await window.DB.obtenerOrdenes();
+                if (ordenesSupabase && ordenesSupabase.length >= 0) {
+                    localStorage.setItem('ordenes', JSON.stringify(ordenesSupabase));
+                }
+            } catch(e) {}
+            const paquetesAbiertos = new Set();
+            document.querySelectorAll('[id^="contenido-tab-"]').forEach(el => {
+                if (el.style.maxHeight && el.style.maxHeight !== '0px') {
+                    paquetesAbiertos.add(el.id.replace('contenido-tab-', ''));
+                }
+            });
+
+            const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const lista = document.getElementById('listaOrdenes');
+
+            const ordenesFiltradas = ordenes.filter(orden => {
+                const mapaReqs = {
+                    corte:'corte', confeccion:'confeccion', impresion:'impresion',
+                    sublimacion:'sublimacion', estampado:'estampado', dtf:'dtf',
+                    corteLaser:'corteLaser', despacho:'despacho'
+                };
+                const reqKey = mapaReqs[areaActual];
+                if (reqKey && orden.requerimientos && !orden.requerimientos[reqKey]) return false;
+                if (!orden.estado) return true;
+                if (!orden.estado[areaActual]) return true;
+                return orden.estado[areaActual] !== 'completado';
+            });
+
+            if (ordenesFiltradas.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>¡Todo al día!</h3>
+                        <p>No hay órdenes pendientes en tu área</p>
+                    </div>`;
+                return;
+            }
+
+            // Leyenda de colores
+            lista.innerHTML = `
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;
+                    padding:12px 16px;background:white;border-radius:12px;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.08);align-items:center;">
+                    <span style="font-size:0.78rem;font-weight:700;color:#607D8B;margin-right:4px;">PRIORIDAD:</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#FFEBEE;color:#C62828;border:1.5px solid #EF9A9A;"><i class="fas fa-circle-exclamation"></i> Vencida</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#FF6D00;color:white;border:1.5px solid #E65100;"><i class="fas fa-circle-exclamation"></i> Hoy</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#FFF8E1;color:#F57C00;border:1.5px solid #FFE082;"><i class="fas fa-clock"></i> 1-2 días</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#EEF2F7;color:#607D8B;border:1.5px solid #E0E0E0;">✓ Sin prisa</span>
+                </div>`;
+            ordenesFiltradas.sort((a, b) => {
+                const diasA = Math.ceil((new Date(a.fechaEntrega + 'T12:00:00') - new Date()) / 86400000);
+                const diasB = Math.ceil((new Date(b.fechaEntrega + 'T12:00:00') - new Date()) / 86400000);
+                return diasA - diasB;
+            });       
+            // Separar paquetes y órdenes normales
+            const conPaquete = ordenesFiltradas.filter(o => o.paqueteId);
+            const sinPaquete = ordenesFiltradas.filter(o => !o.paqueteId);
+            const paquetes = {};
+            conPaquete.forEach(o => {
+                if (!paquetes[o.paqueteId]) paquetes[o.paqueteId] = [];
+                paquetes[o.paqueteId].push(o);
+            });
+
+            let htmlOrdenes = '';
+
+            Object.entries(paquetes).forEach(([paqueteId, ordenesPaquete]) => {
+                const totalPrendas = ordenesPaquete.reduce((sum, o) => {
+                    return sum + (o.cantidadTotal || Object.values(o.tallas || {}).reduce((s,v) => s+v, 0));
+                }, 0);
+                const cliente = ordenesPaquete[0].cliente;
+                const fechaEntrega = ordenesPaquete[0].fechaEntrega;
+                const resumenPrendas = ordenesPaquete.map(o => o.tipoPrenda).join(' · ');
+                const pkgUid = paqueteId.replace(/[^a-zA-Z0-9]/g, '');
+                const fechaObj = new Date(fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
+                const hoy2 = new Date(); hoy2.setHours(0,0,0,0);
+                const dias2 = Math.ceil((fechaObj - hoy2) / 86400000);
+                const textoFecha2 = dias2 < 0 ? `${Math.abs(dias2)}d vencida` : dias2 === 0 ? 'Hoy' : `${dias2}d restantes`;
+
+                htmlOrdenes += `
+                <div style="margin-bottom:20px;">
+                    <div class="paquete-header-tablet ${paquetesAbiertos.has(pkgUid) ? 'abierto' : ''}"
+                        id="header-tab-${pkgUid}"
+                        style="background:linear-gradient(135deg,#880E4F,#AD1457);
+                        padding:14px 22px;
+                        display:flex;align-items:center;justify-content:space-between;
+                        cursor:pointer;" onclick="togglePaqueteTablet('${pkgUid}')">
+                        <div style="display:flex;align-items:center;gap:12px;color:white;">
+                            <i class="fas fa-layer-group" style="font-size:1.2rem;"></i>
+                            <div>
+                                <div style="font-size:1rem;font-weight:800;">${paqueteId}</div>
+                                <div style="font-size:0.82rem;opacity:0.85;">${cliente}</div>
+                                <div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${resumenPrendas}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="background:rgba(255,255,255,0.2);color:white;
+                                padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;">
+                                ${ordenesPaquete.length} prendas · ${totalPrendas} uds
+                            </span>
+                            <span style="background:rgba(255,255,255,0.92);
+                                color:${dias2 < 0 ? '#C62828' : dias2 <= 2 ? '#F57C00' : '#37474F'};
+                                padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">
+                                ${textoFecha2}
+                            </span>
+                            <i class="fas fa-chevron-down" id="chevron-tab-${pkgUid}"
+                                style="color:white;transition:transform 0.3s;transform:${paquetesAbiertos.has(pkgUid)?'rotate(180deg)':'rotate(0deg)'};"></i>
+                        </div>
+                    </div>
+                    <div id="contenido-tab-${pkgUid}"
+                        style="max-height:${paquetesAbiertos.has(pkgUid)?'none':'0'};overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1);">
+                        ${ordenesPaquete.map(orden => generarCardOrden(orden)).join('')}
+                    </div>
+                </div>`;
+            });
+
+            htmlOrdenes += sinPaquete.map(orden => generarCardOrden(orden)).join('');
+            lista.innerHTML += htmlOrdenes;
+
+            
+            // DESPUÉS (pon esto):
+            if (!procesandoProgreso) {
+                window.DB.obtenerOrdenes().then(ordenesSupabase => {
+                    if (ordenesSupabase && ordenesSupabase.length > 0 && !procesandoProgreso) {
+                        localStorage.setItem('ordenes', JSON.stringify(ordenesSupabase));
+                    }
+                }).catch(() => {});
+            }
+        }
+
+        function generarCardOrden(orden) {
+            const totalPrendas = orden.cantidadTotal || Object.values(orden.tallas || {}).reduce((sum, val) => sum + val, 0);
+            const estado = orden.estado[areaActual];
+            const progresoArea = orden[`progreso_${areaActual}`] || {};
+            const fechaObj = new Date(orden.fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const dias = Math.ceil((fechaObj - hoy) / 86400000);
+            const colorFecha = dias < 0 ? 'white' : dias === 0 ? 'white' : dias <= 2 ? '#F57C00' : '#607D8B';
+            const bgFecha = dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#FFF8E1' : '#EEF2F7';
+            const borderFecha = dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#FFE082' : '#E0E0E0';
+            const iconoFecha = dias < 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias === 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias <= 2 ? '<i class="fas fa-clock"></i>' : '';
+            const borderColor = orden.paqueteId ? '#AD1457' : '#1565C0';
+
+            return `
+                <div class="orden-trabajo ${estado === 'completado' ? 'completada' : ''}"
+                    style="border-left-color:${borderColor};${orden.paqueteId ? 'border-radius:0;margin-bottom:0;border-top:1px solid #F8BBD9;' : ''}">
+                    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #EEF2F7;">
+                        <div style="flex-shrink:0;">
+                            ${orden.imagenDiseno
+                                ? `<img src="${orden.imagenDiseno}"
+                                    onclick="ampliarImagen('${orden.imagenDiseno.replace(/'/g, "\\'")}')"
+                                    style="width:90px;height:90px;object-fit:cover;border-radius:14px;
+                                    border:3px solid ${borderColor};box-shadow:0 4px 14px rgba(0,0,0,0.2);
+                                    cursor:pointer;transition:transform 0.3s;"
+                                    onmouseover="this.style.transform='scale(1.06)'"
+                                    onmouseout="this.style.transform='scale(1)'" alt="Diseño">`
+                                : `<div style="width:90px;height:90px;border-radius:14px;background:#F0F4F8;
+                                    display:flex;align-items:center;justify-content:center;border:2px solid #E8EDF2;">
+                                    <i class="fas fa-tshirt" style="font-size:2.2rem;color:#CBD5E0;"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                                <div>
+                                    <div style="font-size:1.6rem;font-weight:800;color:${borderColor};line-height:1.1;">${orden.numeroOrden}</div>
+                                    <div style="font-size:1rem;font-weight:700;color:#1A2332;margin-top:3px;">${orden.cliente}</div>
+                                    <div style="font-size:0.85rem;color:#607D8B;margin-top:2px;">${orden.tipoPrenda}</div>
+                                    ${orden.paqueteId ? `<span style="font-size:0.75rem;padding:3px 8px;border-radius:20px;background:#FCE4EC;color:#AD1457;font-weight:700;display:inline-block;margin-top:4px;"><i class="fas fa-layer-group"></i> ${orden.paqueteId}</span>` : ''}
+                                </div>
+                                <button class="btn-ver-orden" onclick="verOrdenCompleta('${orden.numeroOrden}')">
+                                    <i class="fas fa-file-alt"></i> Ver Orden
+                                </button>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                                <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+                                    border-radius:20px;font-size:0.82rem;font-weight:600;
+                                    background:${bgFecha};color:${colorFecha};border:1.5px solid ${borderFecha};">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    ${iconoFecha} ${new Date(orden.fechaEntrega + 'T12:00:00').toLocaleDateString('es-ES')}
+                                    &nbsp;·&nbsp;
+                                    ${dias < 0 ? `${Math.abs(dias)}d vencida` : dias === 0 ? 'Hoy' : `${dias}d restantes`}
+                                </span>
+                                <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+                                    border-radius:20px;font-size:0.82rem;font-weight:600;
+                                    background:#EEF2F7;color:#1565C0;">
+                                    <i class="fas fa-boxes"></i>
+                                    ${totalPrendas} ${orden.cantidadTotal ? 'unidades' : 'prendas'}
+                                </span>
+                                <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+                                    border-radius:20px;font-size:0.82rem;font-weight:600;
+                                    background:${estado==='en-proceso'?'#FFF3E0':estado==='completado'?'#E8F5E9':'#EEF2F7'};
+                                    color:${estado==='en-proceso'?'#E65100':estado==='completado'?'#2E7D32':'#607D8B'};">
+                                    <i class="fas fa-${estado==='en-proceso'?'spinner fa-spin':estado==='completado'?'check-circle':'clock'}"></i>
+                                    ${estado==='en-proceso'?'En proceso':estado==='completado'?'Completado':'Pendiente'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    ${generarInfoArea(orden)}
+                    ${generarProgresoTallas(orden, progresoArea)}
+                    <div style="margin-top:20px;padding-top:16px;border-top:2px solid #EEF2F7;
+                        display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                        ${estado === 'pendiente' ? `
+                            <button onclick="iniciarOrden('${orden.numeroOrden}')"
+                                style="display:inline-flex;align-items:center;gap:10px;
+                                padding:15px 40px;border:none;border-radius:14px;cursor:pointer;
+                                font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;
+                                background:linear-gradient(135deg,#0D47A1,#1976D2);color:white;
+                                box-shadow:0 6px 20px rgba(13,71,161,0.4);transition:all 0.3s ease;">
+                                <i class="fas fa-play-circle" style="font-size:1.2rem;"></i>
+                                Iniciar Trabajo
+                            </button>
+                        ` : ''}
+                        ${estado === 'en-proceso' ? `
+                            <button onclick="completarOrdenArea('${orden.numeroOrden}')"
+                                style="display:inline-flex;align-items:center;gap:10px;
+                                padding:15px 40px;border:none;border-radius:14px;cursor:pointer;
+                                font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;
+                                background:linear-gradient(135deg,#1B5E20,#2E7D32);color:white;
+                                box-shadow:0 6px 20px rgba(27,94,32,0.4);transition:all 0.3s ease;">
+                                <i class="fas fa-check-double" style="font-size:1.2rem;"></i>
+                                ${orden.cantidadTotal ? 'Completar Orden' : 'Completar Todas las Tallas'}
+                            </button>
+                        ` : ''}
+                        ${estado === 'completado' ? `
+                            <div style="display:inline-flex;align-items:center;gap:8px;
+                                padding:12px 28px;border-radius:14px;
+                                background:#E8F5E9;color:#2E7D32;font-weight:700;font-size:1rem;">
+                                <i class="fas fa-check-circle" style="font-size:1.1rem;"></i>
+                                Completado en esta área
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>`;
+        }
+        function generarInfoArea(orden) {
+            const camposPorArea = {
+                corte:       ['tela', 'ancho', 'molde', 'tipoPrenda'],
+                confeccion:  ['cuello', 'colorCuello', 'dobladillo', 'anchoBies', 'tipoPrenda'],
+                impresion:   ['impresora', 'arte', 'tipoPrenda'],
+                sublimacion: ['impresora', 'tela', 'arte', 'tipoPrenda'],
+                despacho:    ['cliente', 'fechaEntrega', 'marquilla', 'tipoPrenda'],
+                dtf:         ['arte', 'tipoPrenda'],
+                estampado:   ['arte', 'tipoPrenda'],
+                corteLaser:  ['tipoPrenda', 'molde', 'ancho']
+            };
+
+            const labels = {
+                cliente:'Cliente', fechaEntrega:'Fecha de Entrega', tipoPrenda:'Tipo de Prenda',
+                cuello:'Tipo de Cuello', colorCuello:'Color de Cuello', tela:'Tela',
+                ancho:'Ancho', molde:'Molde', dobladillo:'Dobladillo', anchoBies:'Ancho Bies',
+                impresora:'Impresora', arte:'Arte/Diseño', marquilla:'Marquilla'
+            };
+
+            const iconos = {
+                cliente:'user', fechaEntrega:'calendar-alt', tipoPrenda:'tshirt',
+                cuello:'circle-notch', colorCuello:'palette', tela:'scroll',
+                ancho:'ruler-horizontal', molde:'drafting-compass', dobladillo:'cut',
+                anchoBies:'ruler', impresora:'print', arte:'paint-brush', marquilla:'tag'
+            };
+
+            const campos = camposPorArea[areaActual] || [];
+            const info = areasInfo[areaActual];
+
+            let html = `<div class="info-area">`;
+
+            // Imagen del diseño
+            if (orden.imagenDiseno) {
+                html += `
+                    <div style="text-align:center;margin-bottom:16px;padding:16px;
+                        background:white;border-radius:12px;border:2px solid #1565C0;">
+                        <div style="font-weight:700;color:#1565C0;margin-bottom:10px;font-size:0.95rem;">
+                            <i class="fas fa-image"></i> Diseño del Producto
+                        </div>
+                        <img src="${orden.imagenDiseno}"
+                            onclick="ampliarImagen('${orden.imagenDiseno.replace(/'/g, "\\'")}')"
+                            style="max-width:100%;max-height:340px;border-radius:12px;
+                            box-shadow:0 6px 20px rgba(0,0,0,0.25);cursor:zoom-in;
+                            transition:transform 0.3s;"
+                            onmouseover="this.style.transform='scale(1.02)'"
+                            onmouseout="this.style.transform='scale(1)'" alt="Diseño">
+                        <p style="color:#1565C0;font-size:0.78rem;margin-top:8px;">
+                            <i class="fas fa-search-plus"></i> Click para ampliar
+                        </p>
+                    </div>`;
+            }
+
+            // Título de sección
+            html += `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;
+                    padding-bottom:10px;border-bottom:2px solid #EEF2F7;">
+                    <div style="width:32px;height:32px;border-radius:8px;
+                        background:#EEF2F7;display:flex;align-items:center;
+                        justify-content:center;color:${info.color};font-size:0.85rem;">
+                        <i class="fas fa-${info.icon}"></i>
+                    </div>
+                    <span style="font-weight:700;color:#1A2332;font-size:0.95rem;font-family:'Outfit',sans-serif;">
+                        Información para ${info.nombre}
+                    </span>
+                </div>`;
+
+            // Campos en grid de 2 columnas
+            const camposConValor = campos.filter(c => orden[c]);
+            if (camposConValor.length > 0) {
+                html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:12px;">`;
+                camposConValor.forEach(campo => {
+                    let valor = orden[campo];
+
+                    let bgCampo = 'white';
+                    let borderCampo = '#E8EDF2';
+                    let colorIcono = '#1565C0';
+
+                    if (campo === 'fechaEntrega') {
+                        valor = new Date(valor + 'T12:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'long',year:'numeric'});
+                        const f = new Date(orden.fechaEntrega + 'T12:00:00'); f.setHours(0,0,0,0);
+                        const h = new Date(); h.setHours(0,0,0,0);
+                        const d = Math.ceil((f - h) / 86400000);
+                        if (d < 0)      { bgCampo='#FFEBEE'; borderCampo='#EF9A9A'; colorIcono='#C62828'; }
+                        else if (d===0) { bgCampo='#FFF3E0'; borderCampo='#FFCC80'; colorIcono='#E65100'; }
+                        else if (d<=2)  { bgCampo='#FFF8E1'; borderCampo='#FFE082'; colorIcono='#F57C00'; }
+                    }
+
+                    html += `
+                        <div style="background:${bgCampo};border:1.5px solid ${borderCampo};border-radius:10px;
+                            padding:10px 14px;display:flex;align-items:center;gap:10px;">
+                            <div style="width:28px;height:28px;border-radius:7px;flex-shrink:0;
+                                background:#EEF2F7;display:flex;align-items:center;
+                                justify-content:center;color:${colorIcono};font-size:0.78rem;">
+                                <i class="fas fa-${iconos[campo]||'circle'}"></i>
+                            </div>
+                            <div style="min-width:0;">
+                                <div style="font-size:0.72rem;color:#607D8B;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">${labels[campo]||campo}</div>
+                                <div style="font-size:0.9rem;color:${campo==='fechaEntrega'?colorIcono:'#1A2332'};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${valor}</div>
+                            </div>
+                        </div>`;
+                });
+                html += `</div>`;
+            }
+            // Logos del diseño
+            const logos = [
+                { key: 'imagenMangaDerecha',   label: 'Manga Derecha',   icon: 'hand-point-right' },
+                { key: 'imagenMangaIzquierda', label: 'Manga Izquierda', icon: 'hand-point-left'  },
+                { key: 'imagenFrente',         label: 'Frente',          icon: 'tshirt'           },
+                { key: 'imagenEspalda',        label: 'Espalda',         icon: 'arrow-down'       },
+            ];
+            const logosConImagen = logos.filter(l => orden[l.key]);
+            const adicionales = (orden.imagenesAdicionales || []).filter(Boolean);
+
+            if (logosConImagen.length > 0 || adicionales.length > 0) {
+                html += `
+                    <div style="background:#FFF8F0;border:2px solid #FFCCBC;border-radius:14px;padding:16px;margin-top:12px;">
+                        <div style="font-weight:700;color:#E65100;font-size:0.9rem;margin-bottom:12px;">
+                            <i class="fas fa-layer-group"></i> Logos del Diseño
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">`;
+
+                logosConImagen.forEach(l => {
+                    html += `
+                        <div style="text-align:center;">
+                            <div style="font-size:0.72rem;font-weight:700;color:#E65100;text-transform:uppercase;margin-bottom:6px;">
+                                <i class="fas fa-${l.icon}"></i> ${l.label}
+                            </div>
+                            <img src="${orden[l.key]}"
+                                onclick="ampliarImagen('${orden[l.key].replace(/'/g, "\\'")}')"
+                                style="width:100%;max-height:100px;object-fit:contain;border-radius:10px;
+                                border:2px solid #FFCCBC;cursor:zoom-in;background:white;padding:4px;">
+                        </div>`;
+                });
+
+                adicionales.forEach((img, i) => {
+                    html += `
+                        <div style="text-align:center;">
+                            <div style="font-size:0.72rem;font-weight:700;color:#E65100;text-transform:uppercase;margin-bottom:6px;">
+                                <i class="fas fa-image"></i> Adicional ${i+1}
+                            </div>
+                            <img src="${img}"
+                                onclick="ampliarImagen('${img.replace(/'/g, "\\'")}')"
+                                style="width:100%;max-height:100px;object-fit:contain;border-radius:10px;
+                                border:2px solid #FFCCBC;cursor:zoom-in;background:white;padding:4px;">
+                        </div>`;
+                });
+
+                html += `</div></div>`;
+            }
+            // Observaciones
+            if (orden.observaciones) {
+                html += `
+                    <div style="background:#FFF8E1;border:1.5px solid #FFD54F;border-radius:10px;
+                        padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+                        <i class="fas fa-exclamation-triangle" style="color:#F57C00;margin-top:2px;flex-shrink:0;"></i>
+                        <div>
+                            <div style="font-size:0.75rem;font-weight:700;color:#E65100;margin-bottom:3px;">OBSERVACIONES</div>
+                            <div style="font-size:0.9rem;color:#1A2332;font-weight:500;">${orden.observaciones}</div>
+                        </div>
+                    </div>`;
+            }
+
+            // Barra de progreso en todas las áreas
+            if (true) {
+                console.log('requerimientos:', JSON.stringify(orden.requerimientos));
+                const areasRequeridas = ['corte','confeccion','impresion','sublimacion','dtf','estampado','corteLaser', 'despacho']
+                    .filter(k => orden.requerimientos && orden.requerimientos[k]); 
+
+                const nombresAreas = {
+                    corte:      { label: 'Corte',      icon: 'cut' },
+                    confeccion: { label: 'Confección',  icon: 'tshirt' },
+                    impresion:  { label: 'Impresión',   icon: 'print' },
+                    sublimacion:{ label: 'Sublimación', icon: 'fill-drip' },
+                    dtf:        { label: 'DTF',         icon: 'layer-group' },
+                    estampado:  { label: 'Estampado',   icon: 'stamp' },
+                    corteLaser: { label: 'C.Láser',     icon: 'crosshairs' },
+                    despacho:   { label: 'Despacho',   icon: 'shipping-fast' }
+                };
+
+                if (areasRequeridas.length > 0) {
+                    const completadas = areasRequeridas.filter(a => orden.estado[a] === 'completado').length;
+                    const pct = Math.round((completadas / areasRequeridas.length) * 100);
+
+                    html += `
+                    <div style="background:#F0F7FF;border:2px solid #BBDEFB;border-radius:14px;
+                        padding:18px;margin-top:14px;">
+                        <div style="font-weight:700;color:#1565C0;font-size:0.9rem;margin-bottom:14px;">
+                            <i class="fas fa-route"></i> Estado del proceso
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <span style="font-size:0.78rem;color:#607D8B;font-weight:600;">Progreso general</span>
+                            <span style="font-size:0.82rem;font-weight:700;color:${pct===100?'#2E7D32':'#1565C0'};">
+                                ${completadas}/${areasRequeridas.length} áreas completadas
+                            </span>
+                        </div>
+                        <div style="background:#E3F2FD;height:10px;border-radius:5px;overflow:hidden;margin-bottom:16px;">
+                            <div style="background:${pct===100?'#4CAF50':'#1565C0'};height:100%;
+                                width:${pct}%;border-radius:5px;
+                                transition:width 0.6s ease;
+                                animation:${pct<100?'barraAnimada 1s linear infinite':'none'};
+                                background-image:${pct<100?'linear-gradient(90deg,rgba(255,255,255,0.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,0.15) 50%,rgba(255,255,255,0.15) 75%,transparent 75%)':'none'};
+                                background-size:20px 20px;"></div>
+                        </div>
+                        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+                            ${areasRequeridas.map((area, i) => {
+                                const est = orden.estado[area] || 'pendiente';
+                                const info2 = nombresAreas[area] || { label: area, icon: 'circle' };
+                                const bg = est==='completado' ? '#4CAF50' : est==='en-proceso' ? '#FF9800' : '#E0E0E0';
+                                const col = est==='pendiente' ? '#9E9E9E' : 'white';
+                                const ico = est==='completado' ? 'check' : est==='en-proceso' ? 'spinner fa-spin' : info2.icon;
+                                const lineaBg = est==='completado' ? '#4CAF50' : '#E0E0E0';
+                                return `
+                                ${i > 0 ? `<div style="flex:1;min-width:12px;height:3px;background:${lineaBg};border-radius:2px;"></div>` : ''}
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                                    <div style="width:36px;height:36px;border-radius:50%;background:${bg};
+                                        display:flex;align-items:center;justify-content:center;
+                                        color:${col};font-size:0.8rem;
+                                        box-shadow:${est!=='pendiente'?'0 3px 8px rgba(0,0,0,0.2)':'none'};
+                                        transition:all 0.3s;">
+                                        <i class="fas fa-${ico}"></i>
+                                    </div>
+                                    <span style="font-size:0.62rem;font-weight:600;color:#607D8B;white-space:nowrap;">${info2.label}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+                }
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function generarProgresoTallas(orden, progreso) {
+            // Si tiene cantidadTotal (productos sin tallas)
+            if (orden.cantidadTotal !== undefined && orden.cantidadTotal > 0) {
+                const completadas = progreso.total || 0;
+                const restantes = orden.cantidadTotal - completadas;
+                const porcentaje = Math.round((completadas / orden.cantidadTotal) * 100);
+                const claseEstado = completadas === orden.cantidadTotal ? 'completada' : completadas > 0 ? 'en-progreso' : '';
+                
+                return `
+                    <div class="info-area">
+                        <h4><i class="fas fa-calculator"></i> Progreso de Producción</h4>
+                        <div class="talla-progreso-card ${claseEstado}" style="max-width: 500px; margin: 20px auto; padding: 30px;">
+                            <div style="font-size: 3rem; font-weight: bold; color: #2196F3; margin: 20px 0;">
+                                ${completadas}<span style="color: #999; font-size: 2rem;">/${orden.cantidadTotal}</span>
+                            </div>
+                            <div style="font-size: 1.1rem; color: #666; margin-bottom: 20px;">
+                                Unidades Totales
+                            </div>
+                            <div style="margin: 20px 0;">
+                                <div style="background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden;">
+                                    <div style="background: ${completadas === orden.cantidadTotal ? '#4CAF50' : '#FF9800'}; height: 100%; width: ${porcentaje}%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <div style="margin-top: 10px; font-weight: bold; color: #666; font-size: 1.2rem;">${porcentaje}%</div>
+                            </div>
+                            ${restantes > 0 && orden.estado[areaActual] === 'en-proceso' ? `
+                                <div class="talla-input-group" style="margin-top: 20px;">
+                                    <input type="number" id="input-${orden.numeroOrden}-total" min="1" max="${restantes}" value="1" style="width: 100px;">
+                                    <button class="btn-agregar-talla" onclick="agregarProgresoTotal('${orden.numeroOrden}', ${restantes})">
+                                        <i class="fas fa-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            ` : completadas === orden.cantidadTotal ? `
+                                <div style="color: #4CAF50; font-weight: bold; margin-top: 20px; font-size: 1.3rem;">
+                                    <i class="fas fa-check-circle"></i> Completa
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Productos con tallas
+            let html = '<div class="info-area"><h4><i class="fas fa-tasks"></i> Progreso por Talla</h4>';
+            
+            const tallasInfantiles = ['2T', '3T', '4T', '5T', '2', '4', '6', '8', '10', '12', '14', '16'];
+            const tallasAdultas = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+            
+            const tieneInfantiles = tallasInfantiles.some(t => (orden.tallas[t] || 0) > 0);
+            const tieneAdultas = tallasAdultas.some(t => (orden.tallas[t] || 0) > 0);
+
+            function generarCardTalla(talla, label, color) {
+                const total = orden.tallas[talla] || 0;
+                if (total === 0) return '';
+                const completadas = progreso[talla] || 0;
+                const restantes = total - completadas;
+                const pct = Math.round((completadas / total) * 100);
+                const clase = completadas === total ? 'completada' : completadas > 0 ? 'en-progreso' : '';
+                return `
+                    <div class="talla-progreso-card ${clase}">
+                        <div class="talla-nombre" style="color:${color};">${label}</div>
+                        <div style="font-size:2.5rem;font-weight:bold;color:${color};margin:15px 0;">
+                            ${completadas}<span style="color:#999;font-size:1.5rem;">/${total}</span>
+                        </div>
+                        <div style="margin:10px 0;">
+                            <div style="background:#e0e0e0;height:8px;border-radius:4px;overflow:hidden;">
+                                <div style="background:${completadas===total?'#4CAF50':color};height:100%;width:${pct}%;transition:width 0.3s ease;"></div>
+                            </div>
+                            <div style="margin-top:5px;font-weight:bold;color:#666;">${pct}%</div>
+                        </div>
+                        ${restantes > 0 && orden.estado[areaActual] === 'en-proceso' ? `
+                            <div class="talla-input-group">
+                                <input type="number" id="input-${orden.numeroOrden}-${talla}" min="1" max="${restantes}" value="1">
+                                <button class="btn-agregar-talla" onclick="agregarProgreso('${orden.numeroOrden}','${talla}',${restantes})">+</button>
+                            </div>
+                        ` : completadas === total ? `<div style="color:#4CAF50;font-weight:bold;margin-top:10px;">✓ Completa</div>` : ''}
+                    </div>
+                `;
+            }
+
+            // INFANTIL
+            if (tieneInfantiles) {
+                html += '<h5 style="color:#4CAF50;margin:20px 0 10px 0;font-size:1rem;">Tallas Infantil</h5>';
+                html += '<div class="tallas-progreso-grid">';
+                tallasInfantiles.forEach(t => { html += generarCardTalla(t, t, '#4CAF50'); });
+                html += '</div>';
+            }
+
+            // ADULTO
+            if (tieneAdultas) {
+                html += '<h5 style="color:#2196F3;margin:20px 0 10px 0;font-size:1rem;">Tallas Adulto</h5>';
+                html += '<div class="tallas-progreso-grid">';
+                tallasAdultas.forEach(t => { html += generarCardTalla(t, t, '#2196F3'); });
+                html += '</div>';
+            }
+
+            // PANTALÓN MUJER
+            const tallasPM = [['PM-4','4'],['PM-6','6'],['PM-8','8'],['PM-10','10'],['PM-12','12'],['PM-14','14'],['PM-16','16'],['PM-18','18'],['PM-20','20'],['PM-22','22']];
+            if (tallasPM.some(([t]) => (orden.tallas[t]||0) > 0)) {
+                html += '<h5 style="color:#E91E63;margin:20px 0 10px 0;font-size:1rem;">Tallas Pantalón Mujer</h5>';
+                html += '<div class="tallas-progreso-grid">';
+                tallasPM.forEach(([t, label]) => { html += generarCardTalla(t, label, '#E91E63'); });
+                html += '</div>';
+            }
+
+            // PANTALÓN HOMBRE
+            const tallasPH = [['PH-26','26'],['PH-28','28'],['PH-30','30'],['PH-32','32'],['PH-34','34'],['PH-36','36'],['PH-38','38'],['PH-40','40'],['PH-42','42'],['PH-44','44']];
+            if (tallasPH.some(([t]) => (orden.tallas[t]||0) > 0)) {
+                html += '<h5 style="color:#1565C0;margin:20px 0 10px 0;font-size:1rem;">Tallas Pantalón Hombre</h5>';
+                html += '<div class="tallas-progreso-grid">';
+                tallasPH.forEach(([t, label]) => { html += generarCardTalla(t, label, '#1565C0'); });
+                html += '</div>';
+            }
+
+            // PANTALONETAS, PIJAMAS, SUDADERAS, CHAQUETAS
+            const gruposExtra = [
+                { claves:[['PT-S','S'],['PT-M','M'],['PT-L','L'],['PT-XL','XL']], titulo:'Tallas Pantalonetas', color:'#FF9800' },
+                { claves:[['PJ-S','S'],['PJ-M','M'],['PJ-L','L'],['PJ-XL','XL']], titulo:'Tallas Pijamas', color:'#9C27B0' },
+                { claves:[['SD-S','S'],['SD-M','M'],['SD-L','L'],['SD-XL','XL']], titulo:'Tallas Sudaderas/Joggers', color:'#607D8B' },
+                { claves:[['CH-S','S'],['CH-M','M'],['CH-L','L'],['CH-XL','XL']], titulo:'Tallas Chaquetas', color:'#795548' }
+            ];
+
+            gruposExtra.forEach(grupo => {
+                if (!grupo.claves.some(([t]) => (orden.tallas[t]||0) > 0)) return;
+                html += `<h5 style="color:${grupo.color};margin:20px 0 10px 0;font-size:1rem;">${grupo.titulo}</h5>`;
+                html += '<div class="tallas-progreso-grid">';
+                grupo.claves.forEach(([t, label]) => { html += generarCardTalla(t, label, grupo.color); });
+                html += '</div>';
+            });
+
+            html += '</div>';
+            return html;
+        }
+
+
+
+        async function iniciarOrden(numeroOrden) {
+            try {
+                const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+                const index = ordenes.findIndex(o => o.numeroOrden === numeroOrden);
+                
+                if (index !== -1) {
+                    ordenes[index].estado[areaActual] = 'en-proceso';
+                    if (!ordenes[index][`progreso_${areaActual}`]) {
+                        ordenes[index][`progreso_${areaActual}`] = {};
+                    }
+                    localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                }
+
+                // Supabase en segundo plano
+                window.DB.actualizarEstadoArea(numeroOrden, areaActual, 'en-proceso')
+                    .catch(err => console.error('Error Supabase:', err));
+
+                mostrarNotificacion(`🚀 Orden ${numeroOrden} iniciada`, 'info');
+                
+                // Recargar sin await a Supabase
+                cargarOrdenesLocal();
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                mostrarNotificacion('⚠️ Error al iniciar orden', 'error');
+            }
+        }
+
+        function cargarOrdenesLocal() {
+            const paquetesAbiertos = new Set();
+            document.querySelectorAll('[id^="contenido-tab-"]').forEach(el => {
+                if (el.style.maxHeight && el.style.maxHeight !== '0px') {
+                    paquetesAbiertos.add(el.id.replace('contenido-tab-', ''));
+                }
+            });
+
+            const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const lista = document.getElementById('listaOrdenes');
+
+            const ordenesFiltradas = ordenes.filter(orden => {
+                const mapaReqs = {
+                    corte:'corte', confeccion:'confeccion', impresion:'impresion',
+                    sublimacion:'sublimacion', estampado:'estampado', dtf:'dtf',
+                    corteLaser:'corteLaser', despacho:'despacho'
+                };
+                const reqKey = mapaReqs[areaActual];
+                if (reqKey && orden.requerimientos && !orden.requerimientos[reqKey]) return false;
+                if (!orden.estado) return true;
+                if (!orden.estado[areaActual]) return true;
+                return orden.estado[areaActual] !== 'completado';
+            });
+
+            if (ordenesFiltradas.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>¡Todo al día!</h3>
+                        <p>No hay órdenes pendientes en tu área</p>
+                    </div>`;
+                return;
+            }
+
+            // Reutilizar el mismo HTML de cargarOrdenes pero sin fetch a Supabase
+            lista.innerHTML = `
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;
+                    padding:12px 16px;background:white;border-radius:12px;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.08);align-items:center;">
+                    <span style="font-size:0.78rem;font-weight:700;color:#607D8B;margin-right:4px;">PRIORIDAD:</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#FFEBEE;color:#C62828;border:1.5px solid #EF9A9A;"><i class="fas fa-circle-exclamation"></i> Vencida</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#FF6D00;color:white;border:1.5px solid #E65100;"><i class="fas fa-circle-exclamation"></i> Hoy</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#FFF8E1;color:#F57C00;border:1.5px solid #FFE082;"><i class="fas fa-clock"></i> 1-2 días</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;background:#EEF2F7;color:#607D8B;border:1.5px solid #E0E0E0;">✓ Sin prisa</span>
+                </div>`;
+
+            ordenesFiltradas.sort((a, b) => {
+                const diasA = Math.ceil((new Date(a.fechaEntrega + 'T12:00:00') - new Date()) / 86400000);
+                const diasB = Math.ceil((new Date(b.fechaEntrega + 'T12:00:00') - new Date()) / 86400000);
+                return diasA - diasB;
+            });
+
+            const conPaquete = ordenesFiltradas.filter(o => o.paqueteId);
+            const sinPaquete = ordenesFiltradas.filter(o => !o.paqueteId);
+            const paquetes = {};
+            conPaquete.forEach(o => {
+                if (!paquetes[o.paqueteId]) paquetes[o.paqueteId] = [];
+                paquetes[o.paqueteId].push(o);
+            });
+
+            let htmlOrdenes = '';
+
+            Object.entries(paquetes).forEach(([paqueteId, ordenesPaquete]) => {
+                const totalPrendas = ordenesPaquete.reduce((sum, o) => {
+                    return sum + (o.cantidadTotal || Object.values(o.tallas || {}).reduce((s,v) => s+v, 0));
+                }, 0);
+                const cliente = ordenesPaquete[0].cliente;
+                const fechaEntrega = ordenesPaquete[0].fechaEntrega;
+                const resumenPrendas = ordenesPaquete.map(o => o.tipoPrenda).join(' · ');
+                const pkgUid = paqueteId.replace(/[^a-zA-Z0-9]/g, '');
+                const fechaObj = new Date(fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
+                const hoy2 = new Date(); hoy2.setHours(0,0,0,0);
+                const dias2 = Math.ceil((fechaObj - hoy2) / 86400000);
+                const textoFecha2 = dias2 < 0 ? `${Math.abs(dias2)}d vencida` : dias2 === 0 ? 'Hoy' : `${dias2}d restantes`;
+
+                htmlOrdenes += `
+                <div style="margin-bottom:20px;">
+                    <div class="paquete-header-tablet ${paquetesAbiertos.has(pkgUid) ? 'abierto' : ''}"
+                        id="header-tab-${pkgUid}"
+                        style="background:linear-gradient(135deg,#880E4F,#AD1457);padding:14px 22px;
+                        display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
+                        onclick="togglePaqueteTablet('${pkgUid}')">
+                        <div style="display:flex;align-items:center;gap:12px;color:white;">
+                            <i class="fas fa-layer-group" style="font-size:1.2rem;"></i>
+                            <div>
+                                <div style="font-size:1rem;font-weight:800;">${paqueteId}</div>
+                                <div style="font-size:0.82rem;opacity:0.85;">${cliente}</div>
+                                <div style="font-size:0.72rem;opacity:0.7;margin-top:2px;">${resumenPrendas}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="background:rgba(255,255,255,0.2);color:white;padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;">
+                                ${ordenesPaquete.length} prendas · ${totalPrendas} uds
+                            </span>
+                            <span style="background:rgba(255,255,255,0.92);color:${dias2 < 0 ? '#C62828' : dias2 <= 2 ? '#F57C00' : '#37474F'};padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">
+                                ${textoFecha2}
+                            </span>
+                            <i class="fas fa-chevron-down" id="chevron-tab-${pkgUid}"
+                                style="color:white;transition:transform 0.3s;transform:${paquetesAbiertos.has(pkgUid)?'rotate(180deg)':'rotate(0deg)'};"></i>
+                        </div>
+                    </div>
+                    <div id="contenido-tab-${pkgUid}"
+                        style="max-height:${paquetesAbiertos.has(pkgUid)?'none':'0'};overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1);">
+                        ${ordenesPaquete.map(orden => generarCardOrden(orden)).join('')}
+                    </div>
+                </div>`;
+            });
+
+            htmlOrdenes += sinPaquete.map(orden => generarCardOrden(orden)).join('');
+            lista.innerHTML += htmlOrdenes;
+        }
+
+        async function agregarProgreso(numeroOrden, talla, restantes) {
+            if (procesandoProgreso) return false;
+            procesandoProgreso = true;
+
+            const input = document.getElementById(`input-${numeroOrden}-${talla}`);
+            const cantidad = parseInt(input.value);
+            
+            if (!cantidad || cantidad <= 0 || cantidad > restantes) {
+                mostrarNotificacion(`⚠️ Cantidad inválida. Máximo: ${restantes}`, 'error');
+                procesandoProgreso = false;
+                return false;
+            }
+
+            const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const index = ordenes.findIndex(o => o.numeroOrden === numeroOrden);
+            
+            if (index !== -1) {
+                const orden = ordenes[index];
+                if (!orden[`progreso_${areaActual}`]) orden[`progreso_${areaActual}`] = {};
+                orden[`progreso_${areaActual}`][talla] = (orden[`progreso_${areaActual}`][talla] || 0) + cantidad;
+                if (!orden.estado[areaActual] || orden.estado[areaActual] === 'pendiente') {
+                    orden.estado[areaActual] = 'en-proceso';
+                }
+                localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                
+                const todasCompletadas = Object.keys(orden.tallas).every(t => {
+                    if (orden.tallas[t] === 0) return true;
+                    return (orden[`progreso_${areaActual}`][t] || 0) >= orden.tallas[t];
+                });
+                
+                if (todasCompletadas) {
+                    mostrarNotificacion(`✅ ¡Todas las tallas completadas!`, 'success');
+                } else {
+                    mostrarNotificacion(`✅ +${cantidad} a talla ${talla}`, 'success');
+                }
+
+                window.DB.actualizarProgresoArea(numeroOrden, areaActual, orden[`progreso_${areaActual}`])
+                    .catch(err => console.error('Error Supabase:', err));
+
+                cargarOrdenesLocal();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            procesandoProgreso = false;
+            return false;
+        }
+        
+        async function completarOrdenArea(numeroOrden) {
+            // Modal bonito
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 40px; border-radius: 20px; max-width: 500px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <i class="fas fa-check-circle" style="font-size: 4rem; color: #4CAF50; margin-bottom: 20px;"></i>
+                    <h2 style="color: #333; margin-bottom: 15px;">¿Completar todas las tallas?</h2>
+                    <p style="color: #666; font-size: 1.1rem; margin-bottom: 30px;">
+                        Se marcarán como completadas TODAS las tallas restantes de esta orden en <strong>${areasInfo[areaActual].nombre}</strong>
+                    </p>
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <button id="btnCancelarCompletar" class="btn btn-secondary" style="padding: 12px 30px;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button id="btnConfirmarCompletar" class="btn btn-success" style="padding: 12px 30px;">
+                            <i class="fas fa-check"></i> Sí, Completar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const respuesta = await new Promise(resolve => {
+                document.getElementById('btnCancelarCompletar').onclick = () => {
+                    modal.remove();
+                    resolve(false);
+                };
+                document.getElementById('btnConfirmarCompletar').onclick = () => {
+                    modal.remove();
+                    resolve(true);
+                };
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                        resolve(false);
+                    }
+                };
+            });
+            
+            if (!respuesta) return;
+
+            const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const index = ordenes.findIndex(o => o.numeroOrden === numeroOrden);
+            
+            if (index !== -1) {
+                const orden = ordenes[index];
+                
+                if (!orden[`progreso_${areaActual}`]) {
+                    orden[`progreso_${areaActual}`] = {};
+                }
+                
+                if (orden.tallas) {
+                    Object.keys(orden.tallas).forEach(talla => {
+                        if (orden.tallas[talla] > 0) {
+                            orden[`progreso_${areaActual}`][talla] = orden.tallas[talla];
+                        }
+                    });
+                }
+                
+                orden.estado[areaActual] = 'completado';
+
+                localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                cargarOrdenesLocal();
+
+                // Supabase en segundo plano
+                window.DB.actualizarEstadoArea(numeroOrden, areaActual, 'completado')
+                    .catch(err => console.error('Error Supabase estado:', err));
+                window.DB.actualizarProgresoArea(numeroOrden, areaActual, orden[`progreso_${areaActual}`])
+                    .catch(err => console.error('Error Supabase progreso:', err));
+
+                mostrarNotificacion(`✅ Orden completada en ${areasInfo[areaActual].nombre}`, 'success');
+            }
+        }
+
+        function verOrdenCompleta(numeroOrden) {
+            window.open(`ver-orden.html?orden=${numeroOrden}&origen=tablet`, '_blank');
+        }
+
+        async function moverAHistorial(orden) {
+            try {
+                console.log('🔍 Intentando mover al historial:', orden.numeroOrden);
+                
+                // Asegurarse de que todos los campos estén presentes
+                const ordenCompleta = {
+                    ...orden, // Copiar todos los campos existentes
+                    fechaCompletado: new Date().toISOString(),
+                    estadoFinal: 'completado',
+                    // Asegurar que estos campos existan
+                    tipoCuello: orden.tipoCuello || 'N/A',
+                    marquilla: orden.marquilla || 'N/A',
+                    descripcion: orden.descripcion || '',
+                    observaciones: orden.observaciones || '',
+                    disenoUrl: orden.disenoUrl || null,
+                    // Recalcular el total por si acaso
+                    total: Object.values(orden.tallas || {}).reduce((sum, cant) => sum + (parseInt(cant) || 0), 0)
+                };
+                
+                // Mover a historial en Supabase
+                await window.DB.moverAHistorial(ordenCompleta);
+                
+                // También en localStorage
+                let historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+                historial.push(ordenCompleta);
+                localStorage.setItem('historialOrdenes', JSON.stringify(historial));
+                
+                console.log('✅ Orden movida al historial correctamente');
+            } catch (error) {
+                console.error('❌ Error al mover a historial:', error);
+            }
+        }
+
+        function ampliarImagen(imagenSrc) {
+            const modal = document.createElement('div');
+            modal.id = 'modalImagenAmpliada';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.95);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+            `;
+            
+            const contenedor = document.createElement('div');
+            contenedor.style.cssText = 'position: relative;';
+            
+            const img = document.createElement('img');
+            img.src = imagenSrc;
+            img.style.cssText = 'max-width: 90vw; max-height: 90vh; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);';
+            
+            const btnCerrar = document.createElement('button');
+            btnCerrar.textContent = '✕';
+            btnCerrar.style.cssText = `
+                position: absolute;
+                top: -20px;
+                right: -20px;
+                background: #f44336;
+                border: none;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 1.8rem;
+                color: white;
+                font-weight: bold;
+                box-shadow: 0 4px 15px rgba(244, 67, 54, 0.5);
+                transition: all 0.3s ease;
+            `;
+            
+            btnCerrar.onmouseover = () => { btnCerrar.style.transform = 'scale(1.1)'; };
+            btnCerrar.onmouseout = () => { btnCerrar.style.transform = 'scale(1)'; };
+            
+            btnCerrar.addEventListener('click', function(e) {
+                e.stopPropagation();
+                modal.remove();
+            });
+            
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+            
+            contenedor.appendChild(img);
+            contenedor.appendChild(btnCerrar);
+            modal.appendChild(contenedor);
+            document.body.appendChild(modal);
+        }
+
+        function mostrarNotificacion(mensaje, tipo) {
+            const notif = document.createElement('div');
+            notif.className = `notification ${tipo}`;
+            notif.textContent = mensaje;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+
+        // Auto-refresh cada 10 segundos
+        setInterval(async () => {
+            if (!areaActual) return;
+            // Solo actualiza datos sin redibujar si no hay cambios
+            let ordenesSupabase = await window.DB.obtenerOrdenes();
+            if (!ordenesSupabase || ordenesSupabase.length === 0) return;
+            const anterior = localStorage.getItem('ordenes');
+            const nuevo = JSON.stringify(ordenesSupabase);
+            if (anterior !== nuevo) {
+                localStorage.setItem('ordenes', nuevo);
+                cargarOrdenes();
+            }
+        }, 10000);
+
+        // Cargar área guardada si existe
+        function cerrarSesionTrabajador() {
+            sessionStorage.removeItem('trabajadorActivo');
+            sessionStorage.removeItem('jefeAutenticado');
+            sessionStorage.removeItem('trabajadorAutenticado');
+            window.location.href = 'index.html';
+        }
+
+        // Restaurar área si viene de ver-orden
+        const areaEnURL = new URLSearchParams(window.location.search).get('area');
+        if (areaEnURL && areasInfo[areaEnURL]) {
+            seleccionarArea(areaEnURL);
+        }
+
+        function togglePaqueteTablet(pkgUid) {
+            const contenido = document.getElementById(`contenido-tab-${pkgUid}`);
+            const chevron = document.getElementById(`chevron-tab-${pkgUid}`);
+            const header = document.getElementById(`header-tab-${pkgUid}`);
+            const abierto = contenido.style.maxHeight && contenido.style.maxHeight !== '0px';
+            if (abierto) {
+                contenido.style.maxHeight = contenido.scrollHeight + 'px';
+                requestAnimationFrame(() => { contenido.style.maxHeight = '0px'; });
+                chevron.style.transform = 'rotate(0deg)';
+                header.classList.remove('abierto');
+            } else {
+                contenido.style.maxHeight = contenido.scrollHeight + 'px';
+                chevron.style.transform = 'rotate(180deg)';
+                header.classList.add('abierto');
+                setTimeout(() => { contenido.style.maxHeight = 'none'; }, 400);
+            }
+        }
+
+        async function agregarProgresoTotal(numeroOrden, restantes) {
+            if (procesandoProgreso) return false;
+            procesandoProgreso = true;
+
+            const input = document.getElementById(`input-${numeroOrden}-total`);
+            const cantidad = parseInt(input.value);
+            
+            if (!cantidad || cantidad <= 0 || cantidad > restantes) {
+                mostrarNotificacion(`⚠️ Cantidad inválida. Máximo: ${restantes}`, 'error');
+                procesandoProgreso = false;
+                return false;
+            }
+
+            const ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const index = ordenes.findIndex(o => o.numeroOrden === numeroOrden);
+            
+            if (index !== -1) {
+                const orden = ordenes[index];
+                if (!orden[`progreso_${areaActual}`]) orden[`progreso_${areaActual}`] = {};
+                orden[`progreso_${areaActual}`].total = (orden[`progreso_${areaActual}`].total || 0) + cantidad;
+                if (!orden.estado[areaActual] || orden.estado[areaActual] === 'pendiente') {
+                    orden.estado[areaActual] = 'en-proceso';
+                }
+                localStorage.setItem('ordenes', JSON.stringify(ordenes));
+
+                const completadas = orden[`progreso_${areaActual}`].total;
+                if (completadas >= orden.cantidadTotal) {
+                    mostrarNotificacion(`✅ ¡Todas las unidades completadas!`, 'success');
+                } else {
+                    mostrarNotificacion(`✅ +${cantidad} unidades (${completadas}/${orden.cantidadTotal})`, 'success');
+                }
+
+                window.DB.actualizarProgresoArea(numeroOrden, areaActual, orden[`progreso_${areaActual}`])
+                    .catch(err => console.error('Error Supabase:', err));
+
+                cargarOrdenesLocal();
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            procesandoProgreso = false;
+            return false;
+        }
+    </script>
+</body>
+</html>

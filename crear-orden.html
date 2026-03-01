@@ -787,21 +787,32 @@
         let imagenEspalda = null;
         let imagenesAdicionales = [];
 
-        function procesarImagenLogo(file, callback) {
+        async function procesarImagenLogo(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
-                img.onload = function() {
+                img.onload = async function() {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    const max = 800;
+                    const max = 400;
                     if (w > max || h > max) {
                         if (w > h) { h = Math.round(h * max / w); w = max; }
                         else { w = Math.round(w * max / h); h = max; }
                     }
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    callback(canvas.toDataURL('image/jpeg', 0.75));
+                    
+                    // Convertir canvas a File para subir al Storage
+                    canvas.toBlob(async function(blob) {
+                        const archivoComprimido = new File([blob], file.name, { type: 'image/jpeg' });
+                        const resultado = await window.DB.subirImagen(archivoComprimido, 'logos');
+                        if (resultado.success) {
+                            callback(resultado.url);
+                        } else {
+                            // Fallback a base64 si falla el Storage
+                            callback(canvas.toDataURL('image/jpeg', 0.35));
+                        }
+                    }, 'image/jpeg', 0.35);
                 };
                 img.src = e.target.result;
             };
@@ -1095,7 +1106,8 @@
             }
 
         // Establecer fecha mínima y fecha de pedido actual
-        const today = new Date().toISOString().split('T')[0];
+        const hoy = new Date();
+        const today = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
         document.getElementById('fechaPedido').value = today;
         document.getElementById('fechaEntrega').min = today;
 
@@ -1109,30 +1121,41 @@
                 return;
             }
 
+            mostrarNotificacion('⏳ Subiendo imagen...', 'info');
+
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
-                img.onload = function() {
+                img.onload = async function() {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    const maxSize = 1200;
+                    const maxSize = 400;
                     if (w > maxSize || h > maxSize) {
                         if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
                         else       { w = Math.round(w * maxSize / h); h = maxSize; }
                     }
-                    canvas.width = w;
-                    canvas.height = h;
+                    canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    imagenBase64 = canvas.toDataURL('image/jpeg', 0.80);
 
-                    const kb = Math.round(imagenBase64.length * 0.75 / 1024);
-                    document.getElementById('uploadArea').classList.add('has-image');
-                    document.getElementById('imagePreview').innerHTML = `
-                        <img src="${imagenBase64}" class="image-preview" alt="Preview">
-                        <p style="margin-top:10px;color:#4CAF50;font-weight:600;">
-                            <i class="fas fa-check-circle"></i> Imagen cargada: ${file.name}
-                            <span style="color:#607D8B;font-size:0.82rem;margin-left:6px;">(${kb}KB)</span>
-                        </p>`;
+                    canvas.toBlob(async function(blob) {
+                        const archivoComprimido = new File([blob], file.name, { type: 'image/jpeg' });
+                        const resultado = await window.DB.subirImagen(archivoComprimido, 'disenos');
+                        
+                        if (resultado.success) {
+                            imagenBase64 = resultado.url;
+                        } else {
+                            imagenBase64 = canvas.toDataURL('image/jpeg', 0.35);
+                        }
+
+                        const kb = Math.round(blob.size / 1024);
+                        document.getElementById('uploadArea').classList.add('has-image');
+                        document.getElementById('imagePreview').innerHTML = `
+                            <img src="${imagenBase64}" class="image-preview" alt="Preview">
+                            <p style="margin-top:10px;color:#4CAF50;font-weight:600;">
+                                <i class="fas fa-check-circle"></i> Imagen cargada: ${file.name}
+                                <span style="color:#607D8B;font-size:0.82rem;margin-left:6px;">(${kb}KB)</span>
+                            </p>`;
+                    }, 'image/jpeg', 0.35);
                 };
                 img.src = event.target.result;
             };
@@ -1246,8 +1269,13 @@
                 
                 document.getElementById('btnCerrarError').onclick = () => {
                     modal.remove();
-                    document.getElementById('numeroOrden').focus();
-                    document.getElementById('numeroOrden').select();
+                    const campoNumero = document.getElementById('numeroOrden');
+                    campoNumero.readOnly = false;
+                    campoNumero.style.background = '#FFF8E1';
+                    campoNumero.style.borderColor = '#F57C00';
+                    campoNumero.style.color = '#E65100';
+                    campoNumero.focus();
+                    campoNumero.select();
                 };
                 
                 modal.onclick = (e) => {

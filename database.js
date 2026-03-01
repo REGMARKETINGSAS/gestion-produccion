@@ -3,8 +3,8 @@
 // REG Marketing S.A.S - Sistema de Producción
 // ==========================================
 
-const SUPABASE_URL = 'https://nfjbgxnbmsracwalgowm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mamJneG5ibXNyYWN3YWxnb3dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzk0NDMsImV4cCI6MjA4NzcxNTQ0M30.yQfEhlzP7aaZ2rOA_UOP8lK9MzCDL-yKrd36EZLSm1A';
+const SUPABASE_URL = 'https://hemoxwbzawscuzdenmka.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlbW94d2J6YXdzY3V6ZGVubWthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5Mzc4NTksImV4cCI6MjA4NzUxMzg1OX0.OyalHz7U9jqQW1NUUyoFm-6DxwJY3DXbMPxy7c1PB9g';
 
 // Importar Supabase desde CDN
 const { createClient } = supabase;
@@ -645,6 +645,46 @@ async function verificarLogin(clave) {
         .single();
     return !error && data;
 }
+
+// ==========================================
+// SUPABASE STORAGE - IMÁGENES
+// ==========================================
+
+async function subirImagen(archivo, carpeta) {
+    try {
+        const extension = archivo.name.split('.').pop() || 'jpg';
+        const nombreArchivo = `${carpeta}/${Date.now()}_${Math.random().toString(36).substring(2)}.${extension}`;
+        
+        const { data, error } = await supabaseClient.storage
+            .from('imagenes-ordenes')
+            .upload(nombreArchivo, archivo, {
+                cacheControl: '3600',
+                upsert: false
+            });
+        
+        if (error) throw error;
+        
+        const { data: urlData } = supabaseClient.storage
+            .from('imagenes-ordenes')
+            .getPublicUrl(nombreArchivo);
+        
+        return { success: true, url: urlData.publicUrl };
+    } catch (error) {
+        console.error('❌ Error al subir imagen:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+async function eliminarImagen(url) {
+    try {
+        if (!url || !url.includes('imagenes-ordenes')) return;
+        const path = url.split('/imagenes-ordenes/')[1];
+        if (!path) return;
+        await supabaseClient.storage.from('imagenes-ordenes').remove([path]);
+    } catch (error) {
+        console.error('Error al eliminar imagen:', error);
+    }
+}
 // Para usar en otros archivos:
 window.DB = {
     // Órdenes
@@ -665,7 +705,9 @@ window.DB = {
     verificarConexion,
     guardarRespaldoLocal,
     obtenerSiguienteNumeroOrden,
-    verificarLogin
+    verificarLogin,
+    subirImagen,
+    eliminarImagen
 
 };
 

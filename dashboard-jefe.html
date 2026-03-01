@@ -420,10 +420,24 @@
 
     <script>
 
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
+
         if (sessionStorage.getItem('jefeAutenticado') !== 'true') {
             window.location.href = 'index.html';
         }
         async function cargarOrdenes() {
+            // Guardar paquetes abiertos
+            const paquetesAbiertos = new Set();
+            document.querySelectorAll('[id^="contenido-"]').forEach(el => {
+                if (el.style.maxHeight && el.style.maxHeight !== '0px') {
+                    paquetesAbiertos.add(el.id.replace('contenido-', ''));
+                }
+            });
+            
             let ordenes = await window.DB.obtenerOrdenes();
             if (!ordenes || ordenes.length === 0) {
                 ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
@@ -549,7 +563,20 @@
             html += sinPaquete.map(orden => renderOrdenCard(orden)).join('');
 
             listaOrdenes.innerHTML = html;
-        }
+
+            // Restaurar paquetes que estaban abiertos
+            paquetesAbiertos.forEach(pkgUid => {
+                const contenido = document.getElementById(`contenido-${pkgUid}`);
+                const chevron = document.getElementById(`chevron-${pkgUid}`);
+                const header = contenido?.previousElementSibling;
+                if (contenido) {
+                    contenido.style.transition = 'none';
+                    contenido.style.maxHeight = 'none';
+                    if (chevron) chevron.style.transform = 'rotate(180deg)';
+                    if (header) header.classList.add('abierto');
+                }
+            });
+                    }
 
         function renderOrdenCard(orden) {
             const totalPrendas = orden.cantidadTotal || Object.values(orden.tallas || {}).reduce((sum, val) => sum + val, 0);
@@ -778,19 +805,23 @@
         }
         
         async function verHistorial() {
-            let historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
-
-            // Abrir modal inmediatamente con localStorage
-            // Supabase sincroniza en segundo plano
-            window.DB.obtenerHistorial().then(data => {
+            // Siempre cargar desde Supabase al abrir
+            let historial = [];
+            try {
+                const data = await window.DB.obtenerHistorial();
                 if (data && data.length > 0) {
-                    const nuevo = data.map(item => ({
+                    historial = data.map(item => ({
                         ...item.datos_completos,
                         fechaCompletado: item.fecha_completado
                     }));
-                    localStorage.setItem('historialOrdenes', JSON.stringify(nuevo));
+                    localStorage.setItem('historialOrdenes', JSON.stringify(historial));
+                } else {
+                    localStorage.removeItem('historialOrdenes');
                 }
-            }).catch(() => {});
+            } catch(e) {
+                // Si falla Supabase, usar localStorage como respaldo
+                historial = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+            }
 
             const overlay = document.createElement('div');
             overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
@@ -930,6 +961,22 @@
                 );
                 if (!confirmar) return;
                 try {
+                    // Eliminar imágenes del Storage antes de limpiar
+                    const historialActual = JSON.parse(localStorage.getItem('historialOrdenes') || '[]');
+                    for (const orden of historialActual) {
+                        const imagenes = [
+                            orden.imagenDiseno,
+                            orden.imagenMangaDerecha,
+                            orden.imagenMangaIzquierda,
+                            orden.imagenFrente,
+                            orden.imagenEspalda,
+                            ...(orden.imagenesAdicionales || [])
+                        ].filter(url => url && url.includes('supabase'));
+                        for (const url of imagenes) {
+                            await window.DB.eliminarImagen(url);
+                        }
+                    }
+
                     await window.DB.limpiarHistorial();
                     localStorage.removeItem('historialOrdenes');
                     overlay.remove();
@@ -1257,6 +1304,22 @@
         
         try {
             // Eliminar de Supabase
+            // Eliminar imágenes del Storage
+            const ordenAEliminar = ordenes.find(o => o.numeroOrden === numeroOrden);
+            if (ordenAEliminar) {
+                const imagenesAEliminar = [
+                    ordenAEliminar.imagenDiseno,
+                    ordenAEliminar.imagenMangaDerecha,
+                    ordenAEliminar.imagenMangaIzquierda,
+                    ordenAEliminar.imagenFrente,
+                    ordenAEliminar.imagenEspalda,
+                    ...(ordenAEliminar.imagenesAdicionales || [])
+                ].filter(url => url && url.includes('supabase'));
+                
+                for (const url of imagenesAEliminar) {
+                    await window.DB.eliminarImagen(url);
+                }
+            }
             const resultado = await window.DB.eliminarOrden(numeroOrden);
             
             if (resultado.success) {
@@ -1816,7 +1879,8 @@
 
         document.body.appendChild(overlay);
 
-        const today = new Date().toISOString().split('T')[0];
+        const hoy = new Date();
+        const today = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
         document.getElementById('pkgFechaPedido').value = today;
 
         agregarFilaPrenda();
@@ -1874,6 +1938,7 @@
                 prendas.push({ 
                     tipo, tallas, cantidadTotal, imagen, tipoTallas, 
                     requerimientos: reqs,
+                    logos: fila._logos || {},
                     tela: fila.querySelector('.select-tela-pkg')?.value === 'Otra'
                         ? (fila.querySelector('.input-tela-otra-pkg')?.value || 'Otra')
                         : (fila.querySelector('.select-tela-pkg')?.value || ''),
@@ -1909,6 +1974,11 @@
                     tallas: prenda.tallas,
                     paqueteId,
                     imagenDiseno: prenda.imagen,
+                    imagenMangaDerecha: prenda.logos?.['manga-derecha'] || null,
+                    imagenMangaIzquierda: prenda.logos?.['manga-izquierda'] || null,
+                    imagenFrente: prenda.logos?.frente || null,
+                    imagenEspalda: prenda.logos?.espalda || null,
+                    imagenesAdicionales: prenda.logos?.adicionales || [],
                     descripcionPedido: `Parte de ${paqueteId}`,
                     requerimientos: prenda.requerimientos,
                     tela: prenda.tela || '',
@@ -2175,7 +2245,47 @@
                 </div>
             </div>
             <!-- Tallas (se carga dinámicamente) -->
-            <div class="contenedor-tallas-${idFila}"></div>`;
+            <!-- Tallas (se carga dinámicamente) -->
+            <div class="contenedor-tallas-${idFila}"></div>
+
+            <!-- LOGOS -->
+            <div class="logos-prenda-${idFila}" style="display:none;margin-top:12px;">
+                <label style="font-size:0.72rem;font-weight:700;color:#607D8B;
+                    text-transform:uppercase;display:block;margin-bottom:8px;">
+                    <i class="fas fa-image" style="color:#AD1457;"></i> Logos del diseño
+                </label>
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+                    ${['frente','espalda','manga-derecha','manga-izquierda'].map(zona => `
+                    <div style="background:white;border:1.5px solid #E3F2FD;border-radius:10px;
+                        padding:10px;display:flex;align-items:center;gap:8px;">
+                        <div id="upload-logo-${idFila}-${zona}"
+                            style="width:52px;height:52px;border:2px dashed #90CAF9;border-radius:8px;
+                            background:#EBF5FF;display:flex;flex-direction:column;align-items:center;
+                            justify-content:center;cursor:pointer;font-size:0.55rem;color:#90CAF9;
+                            text-align:center;gap:2px;flex-shrink:0;">
+                            <i class="fas fa-camera" style="font-size:1rem;"></i>
+                            <span>Foto</span>
+                        </div>
+                        <input type="file" id="file-logo-${idFila}-${zona}" accept="image/*" style="display:none;">
+                        <div>
+                            <div style="font-size:0.72rem;font-weight:700;color:#1A2332;">
+                                ${zona === 'frente' ? 'Frente' : zona === 'espalda' ? 'Espalda' : zona === 'manga-derecha' ? 'Manga Derecha' : 'Manga Izquierda'}
+                            </div>
+                        </div>
+                    </div>`).join('')}
+                </div>
+                <!-- Logos adicionales -->
+                <div style="margin-top:8px;background:white;border:1.5px solid #E3F2FD;border-radius:10px;padding:10px;">
+                    <div style="font-size:0.72rem;font-weight:700;color:#607D8B;margin-bottom:6px;">Logos Adicionales</div>
+                    <div id="logos-adicionales-${idFila}" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+                    <button type="button" onclick="agregarLogoAdicionalPkg('${idFila}')"
+                        style="margin-top:6px;padding:5px 12px;border:1.5px dashed #90CAF9;border-radius:8px;
+                        background:#EBF5FF;color:#1565C0;font-size:0.75rem;font-weight:600;cursor:pointer;
+                        font-family:'Outfit',sans-serif;display:inline-flex;align-items:center;gap:5px;">
+                        <i class="fas fa-plus"></i> Agregar logo
+                    </button>
+                </div>
+            </div>`;
 
         lista.appendChild(fila);
 
@@ -2196,26 +2306,97 @@
             
             // Prendas que NO necesitan especificaciones
             const sinEspecs = ['Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal'];
-            if (especificaciones) {
-                especificaciones.style.display = sinEspecs.includes(tipo) ? 'none' : 'grid';
-            }
-        });
+                if (especificaciones) {
+                    especificaciones.style.display = sinEspecs.includes(tipo) ? 'none' : 'grid';
+                }
+
+                // Mostrar logos cuando se selecciona un tipo
+                const logosDiv = fila.querySelector(`.logos-prenda-${idFila}`);
+                if (logosDiv) {
+                    logosDiv.style.display = tipo ? 'block' : 'none';
+
+                    // Activar uploads de logos (solo una vez)
+                    ['frente','espalda','manga-derecha','manga-izquierda'].forEach(zona => {
+                        const uploadDiv = document.getElementById(`upload-logo-${idFila}-${zona}`);
+                        const fileInput = document.getElementById(`file-logo-${idFila}-${zona}`);
+                        if (!uploadDiv || !fileInput || uploadDiv._bindDone) return;
+                        uploadDiv._bindDone = true;
+                        uploadDiv.onclick = () => fileInput.click();
+                        fileInput.addEventListener('change', function() {
+                            const file = this.files[0];
+                            if (!file) return;
+                            uploadDiv.innerHTML = `<i class="fas fa-spinner fa-spin" style="font-size:1rem;color:#90CAF9;"></i>`;
+                            const reader = new FileReader();
+                            reader.onload = e => {
+                                const img = new Image();
+                                img.onload = async function() {
+                                    const canvas = document.createElement('canvas');
+                                    let w = img.width, h = img.height;
+                                    const max = 400;
+                                    if (w > max || h > max) {
+                                        if (w > h) { h = Math.round(h*max/w); w = max; }
+                                        else { w = Math.round(w*max/h); h = max; }
+                                    }
+                                    canvas.width = w; canvas.height = h;
+                                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                                    canvas.toBlob(async function(blob) {
+                                        const archivoComprimido = new File([blob], file.name, { type:'image/jpeg' });
+                                        const resultado = await window.DB.subirImagen(archivoComprimido, 'logos');
+                                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.35);
+                                        if (!fila._logos) fila._logos = {};
+                                        fila._logos[zona] = urlFinal;
+                                        uploadDiv.innerHTML = `<img src="${urlFinal}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;">`;
+                                        uploadDiv.style.border = '2px solid #2E7D32';
+                                        uploadDiv.style.padding = '0';
+                                    }, 'image/jpeg', 0.35);
+                                };
+                                img.src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        });
+                    });
+                }
+            });
 
         // Evento imagen
         const uploadDiv = document.getElementById(`upload-${idFila}`);
         const fileInput = document.getElementById(`file-${idFila}`);
 
         uploadDiv.onclick = () => fileInput.click();
-        fileInput.addEventListener('change', function() {
+        fileInput.addEventListener('change', async function() {
             const file = this.files[0];
             if (!file) return;
+
+            uploadDiv.innerHTML = `<i class="fas fa-spinner fa-spin" style="font-size:1.4rem;color:#90CAF9;"></i>`;
+
             const reader = new FileReader();
             reader.onload = e => {
-                fila._imagenBase64 = e.target.result;
-                uploadDiv.innerHTML = `<img src="${e.target.result}"
-                    style="width:68px;height:68px;object-fit:cover;border-radius:8px;">`;
-                uploadDiv.style.border = '2px solid #2E7D32';
-                uploadDiv.style.padding = '0';
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const max = 400;
+                    if (w > max || h > max) {
+                        if (w > h) { h = Math.round(h * max / w); w = max; }
+                        else { w = Math.round(w * max / h); h = max; }
+                    }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+                    canvas.toBlob(async function(blob) {
+                        const archivoComprimido = new File([blob], file.name, { type: 'image/jpeg' });
+                        const resultado = await window.DB.subirImagen(archivoComprimido, 'paquetes');
+
+                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.35);
+                        fila._imagenBase64 = urlFinal;
+
+                        uploadDiv.innerHTML = `<img src="${urlFinal}"
+                            style="width:68px;height:68px;object-fit:cover;border-radius:8px;">`;
+                        uploadDiv.style.border = '2px solid #2E7D32';
+                        uploadDiv.style.padding = '0';
+                    }, 'image/jpeg', 0.35);
+                };
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         });
@@ -2310,6 +2491,66 @@
         const inp = sel.parentElement.querySelector('.input-tela-otra-pkg');
         inp.style.display = sel.value === 'Otra' ? 'block' : 'none';
         if (sel.value !== 'Otra') inp.value = '';
+    }
+
+    function agregarLogoAdicionalPkg(idFila) {
+        const contenedor = document.getElementById(`logos-adicionales-${idFila}`);
+        const fila = document.getElementById(idFila);
+        const idx = Date.now();
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:relative;';
+        wrapper.innerHTML = `
+            <div id="upload-logoadd-${idFila}-${idx}"
+                style="width:52px;height:52px;border:2px dashed #90CAF9;border-radius:8px;
+                background:#EBF5FF;display:flex;align-items:center;justify-content:center;
+                cursor:pointer;color:#90CAF9;">
+                <i class="fas fa-plus" style="font-size:1rem;"></i>
+            </div>
+            <input type="file" id="file-logoadd-${idFila}-${idx}" accept="image/*" style="display:none;">
+            <button type="button" onclick="this.parentElement.remove()"
+                style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border:none;
+                border-radius:50%;background:#E53935;color:white;font-size:0.6rem;cursor:pointer;
+                display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-times"></i>
+            </button>`;
+        contenedor.appendChild(wrapper);
+
+        const uploadDiv = document.getElementById(`upload-logoadd-${idFila}-${idx}`);
+        const fileInput = document.getElementById(`file-logoadd-${idFila}-${idx}`);
+        uploadDiv.onclick = () => fileInput.click();
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            uploadDiv.innerHTML = `<i class="fas fa-spinner fa-spin" style="font-size:1rem;color:#90CAF9;"></i>`;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const max = 400;
+                    if (w > max || h > max) {
+                        if (w > h) { h = Math.round(h*max/w); w = max; }
+                        else { w = Math.round(w*max/h); h = max; }
+                    }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(async function(blob) {
+                        const archivoComprimido = new File([blob], file.name, { type:'image/jpeg' });
+                        const resultado = await window.DB.subirImagen(archivoComprimido, 'logos');
+                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.35);
+                        if (!fila._logos) fila._logos = {};
+                        if (!fila._logos.adicionales) fila._logos.adicionales = [];
+                        fila._logos.adicionales.push(urlFinal);
+                        uploadDiv.innerHTML = `<img src="${urlFinal}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;">`;
+                        uploadDiv.style.border = '2px solid #2E7D32';
+                        uploadDiv.style.padding = '0';
+                    }, 'image/jpeg', 0.35);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
     }
     </script>
 </body>

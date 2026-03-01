@@ -279,6 +279,7 @@
     </div>
 
     <script>
+
         if (!sessionStorage.getItem('jefeAutenticado') && !sessionStorage.getItem('trabajadorAutenticado')) {
             window.location.href = 'index.html';
         }
@@ -322,7 +323,11 @@
             animarNumero('statProceso', enProceso);
             animarNumero('statHistorial', listasParaHistorial);
         }
-
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
         function animarNumero(id, target) {
             const el = document.getElementById(id);
             let current = 0;
@@ -360,4 +365,3 @@
     </script>
 </body>
 </html>
-

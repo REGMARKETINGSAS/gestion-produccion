@@ -451,6 +451,12 @@
     <script>
         let areaActual = null;
         let procesandoProgreso = false;
+
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
         if (sessionStorage.getItem('jefeAutenticado') === 'true') {
             document.getElementById('btnSistemaPrincipal').innerHTML = `
                 <a href="inicio.html" class="btn btn-secondary" style="text-decoration:none;">

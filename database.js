@@ -3,8 +3,8 @@
 // REG Marketing S.A.S - Sistema de Producción
 // ==========================================
 
-const SUPABASE_URL = 'https://hemoxwbzawscuzdenmka.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlbW94d2J6YXdzY3V6ZGVubWthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5Mzc4NTksImV4cCI6MjA4NzUxMzg1OX0.OyalHz7U9jqQW1NUUyoFm-6DxwJY3DXbMPxy7c1PB9g';
+const SUPABASE_URL = 'https://nfjbgxnbmsracwalgowm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mamJneG5ibXNyYWN3YWxnb3dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzk0NDMsImV4cCI6MjA4NzcxNTQ0M30.yQfEhlzP7aaZ2rOA_UOP8lK9MzCDL-yKrd36EZLSm1A';
 
 // Importar Supabase desde CDN
 const { createClient } = supabase;
@@ -710,6 +710,7 @@ window.DB = {
     eliminarImagen
 
 };
+
 
 
 

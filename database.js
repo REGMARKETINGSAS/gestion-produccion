@@ -319,10 +319,13 @@ function convertirOrdenParaBD(orden) {
         talla_sudadera_xl: (orden.tallas && orden.tallas['SD-XL']) || 0,
 
         // Tallas de Chaquetas
+        talla_chaqueta_xs: (orden.tallas && orden.tallas['CH-XS']) || 0,
         talla_chaqueta_s: (orden.tallas && orden.tallas['CH-S']) || 0,
         talla_chaqueta_m: (orden.tallas && orden.tallas['CH-M']) || 0,
         talla_chaqueta_l: (orden.tallas && orden.tallas['CH-L']) || 0,
         talla_chaqueta_xl: (orden.tallas && orden.tallas['CH-XL']) || 0,
+        talla_chaqueta_2xl: (orden.tallas && orden.tallas['CH-2XL']) || 0,
+        talla_chaqueta_3xl: (orden.tallas && orden.tallas['CH-3XL']) || 0,
 
         imagen_manga_derecha:   orden.imagenMangaDerecha   || null,
         imagen_manga_izquierda: orden.imagenMangaIzquierda || null,
@@ -447,10 +450,13 @@ function convertirOrdenDesdeBD(ordenBD) {
             'SD-XL': ordenBD.talla_sudadera_xl || 0,
 
             // Chaquetas
+            'CH-XS': ordenBD.talla_chaqueta_xs || 0,
             'CH-S': ordenBD.talla_chaqueta_s || 0,
             'CH-M': ordenBD.talla_chaqueta_m || 0,
             'CH-L': ordenBD.talla_chaqueta_l || 0,
-            'CH-XL': ordenBD.talla_chaqueta_xl || 0
+            'CH-XL': ordenBD.talla_chaqueta_xl || 0,
+            'CH-2XL': ordenBD.talla_chaqueta_2xl || 0,
+            'CH-3XL': ordenBD.talla_chaqueta_3xl || 0
         },
 
         
@@ -710,7 +716,6 @@ window.DB = {
     eliminarImagen
 
 };
-
 
 
 

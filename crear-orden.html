@@ -708,18 +708,22 @@
                 </div>
 
                 <!-- CHAQUETAS -->
+                <!-- CHAQUETAS -->
                 <div id="seccion-chaquetas" style="display:none;margin-top:16px;">
                     <p style="font-size:0.82rem;font-weight:700;color:#795548;margin-bottom:8px;">CHAQUETAS</p>
                     <table class="tabla-tallas">
                         <thead><tr style="background:#795548;">
-                            <th>S</th><th>M</th><th>L</th><th>XL</th>
+                            <th>XS</th><th>S</th><th>M</th><th>L</th><th>XL</th><th>2XL</th><th>3XL</th>
                             <th style="background:#4E342E;">TOTAL</th>
                         </tr></thead>
                         <tbody><tr>
+                            <td><input type="number" id="tallaCHXS" min="0" value="0" class="talla-input"></td>
                             <td><input type="number" id="tallaCHS" min="0" value="0" class="talla-input"></td>
                             <td><input type="number" id="tallaCHM" min="0" value="0" class="talla-input"></td>
                             <td><input type="number" id="tallaCHL" min="0" value="0" class="talla-input"></td>
                             <td><input type="number" id="tallaCHXL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaCH2XL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaCH3XL" min="0" value="0" class="talla-input"></td>
                             <td class="total-cell" id="totalChaquetas">0</td>
                         </tr></tbody>
                     </table>
@@ -980,7 +984,7 @@
                             'PT-S':'tallaPTS','PT-M':'tallaPTM','PT-L':'tallaPTL','PT-XL':'tallaPTXL',
                             'PJ-S':'tallaPJS','PJ-M':'tallaPJM','PJ-L':'tallaPJL','PJ-XL':'tallaPJXL',
                             'SD-S':'tallaSD_S','SD-M':'tallaSD_M','SD-L':'tallaSD_L','SD-XL':'tallaSD_XL',
-                            'CH-S':'tallaCHS','CH-M':'tallaCHM','CH-L':'tallaCHL','CH-XL':'tallaCHXL'
+                            'CH-XS':'tallaCHXS','CH-S':'tallaCHS','CH-M':'tallaCHM','CH-L':'tallaCHL','CH-XL':'tallaCHXL','CH-2XL':'tallaCH2XL','CH-3XL':'tallaCH3XL'
                         };
 
                         Object.entries(orden.tallas || {}).forEach(([talla, cantidad]) => {
@@ -1077,7 +1081,7 @@
                 
                 // Total Chaquetas
                 let totalChaquetas = 0;
-                ['CHS', 'CHM', 'CHL', 'CHXL'].forEach(talla => {
+                ['CHXS', 'CHS', 'CHM', 'CHL', 'CHXL', 'CH2XL', 'CH3XL'].forEach(talla => {
                     const input = document.getElementById(`talla${talla}`);
                     if (input) totalChaquetas += parseInt(input.value) || 0;
                 });
@@ -1379,10 +1383,13 @@
                         'SD-XL': parseInt(document.getElementById('tallaSD_XL')?.value) || 0,
                         
                         // Tallas Chaquetas
+                        'CH-XS': parseInt(document.getElementById('tallaCHXS')?.value) || 0,
                         'CH-S': parseInt(document.getElementById('tallaCHS')?.value) || 0,
                         'CH-M': parseInt(document.getElementById('tallaCHM')?.value) || 0,
                         'CH-L': parseInt(document.getElementById('tallaCHL')?.value) || 0,
-                        'CH-XL': parseInt(document.getElementById('tallaCHXL')?.value) || 0
+                        'CH-XL': parseInt(document.getElementById('tallaCHXL')?.value) || 0,
+                        'CH-2XL': parseInt(document.getElementById('tallaCH2XL')?.value) || 0,
+                        'CH-3XL': parseInt(document.getElementById('tallaCH3XL')?.value) || 0
                     }
                 }),
                 descripcionPedido: document.getElementById('descripcionPedido')?.value || '',

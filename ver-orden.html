@@ -1168,9 +1168,7 @@
 
         function descargarPDF() {
             const elemento = document.querySelector('.orden-documento');
-            elemento.style.border = '3px solid #1565C0';
-            elemento.style.borderRadius = '0';
-
+            
             // Forzar color sólido en elementos con gradiente
             const gradientes = document.querySelectorAll('.spec-header, .total-general, .info-seccion-header');
             const estilosOriginales = [];
@@ -1179,29 +1177,64 @@
                 el.style.background = '#1565C0';
             });
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const anchoOriginal = elemento.style.width;
+            elemento.style.width = '1000px';
 
-            doc.html(elemento, {
-                callback: function(doc) {
-                    elemento.style.border = '';
-                    elemento.style.borderRadius = '';
-                    // Restaurar estilos originales
-                    gradientes.forEach((el, i) => {
-                        el.style.background = estilosOriginales[i];
-                    });
-                    doc.save(`Orden_${document.getElementById('infoNumeroOrden')?.textContent || 'produccion'}.pdf`);
-                },
-                x: 10,
-                y: 10,
-                width: 190,
-                windowWidth: 1000,
-                html2canvas: {
-                    scale: 0.18,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff'
+            html2canvas(elemento, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                width: 1000,
+                windowWidth: 1000
+            }).then(canvas => {
+                // Restaurar estilos
+                gradientes.forEach((el, i) => {
+                    el.style.background = estilosOriginales[i];
+                });
+                elemento.style.width = anchoOriginal;
+
+                const { jsPDF } = window.jspdf;
+                // Carta: 215.9mm x 279.4mm
+                const doc = new jsPDF('p', 'mm', 'letter');
+                const pageW = 215.9;
+                const pageH = 279.4;
+                const margen = 8;
+                const anchoUtil = pageW - margen * 2;
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                const imgH = (canvas.height * anchoUtil) / canvas.width;
+
+                let posY = margen;
+                let altoRestante = imgH;
+                let recorteY = 0;
+
+                while (altoRestante > 0) {
+                    const altoPagina = pageH - margen * 2;
+                    const altoCorte = Math.min(altoRestante, altoPagina);
+                    
+                    const canvasPagina = document.createElement('canvas');
+                    canvasPagina.width = canvas.width;
+                    canvasPagina.height = (altoCorte * canvas.width) / anchoUtil;
+                    
+                    const ctx = canvasPagina.getContext('2d');
+                    ctx.drawImage(canvas, 
+                        0, recorteY * canvas.width / anchoUtil,
+                        canvas.width, canvasPagina.height,
+                        0, 0,
+                        canvas.width, canvasPagina.height
+                    );
+
+                    const imgPagina = canvasPagina.toDataURL('image/jpeg', 0.92);
+                    doc.addImage(imgPagina, 'JPEG', margen, margen, anchoUtil, altoCorte);
+
+                    altoRestante -= altoCorte;
+                    recorteY += altoCorte;
+
+                    if (altoRestante > 0) doc.addPage();
                 }
+
+                doc.save(`Orden_${document.getElementById('infoNumeroOrden')?.textContent || 'produccion'}.pdf`);
             });
         }
 

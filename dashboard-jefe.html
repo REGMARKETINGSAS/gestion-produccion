@@ -661,6 +661,7 @@
                         ${orden.requerimientos?.estampado  ? generarProceso('Estampado',   'stamp',         orden.estado.estampado)  : ''}
                         ${orden.requerimientos?.dtf        ? generarProceso('DTF',         'layer-group',   orden.estado.dtf)        : ''}
                         ${orden.requerimientos?.corteLaser ? generarProceso('Corte Láser', 'crosshairs',    orden.estado.corteLaser) : ''}
+                        ${orden.requerimientos?.bordado ? `<div class="proceso-item pendiente"><div class="proceso-icon"><i class="fas fa-ring"></i></div><div class="proceso-nombre">Bordado</div><div class="proceso-estado">Requerido</div></div>` : ''}
                         ${orden.requerimientos?.despacho   ? generarProceso('Despacho',    'shipping-fast', orden.estado.despacho)   : ''}
                     </div>
                 </div>`;

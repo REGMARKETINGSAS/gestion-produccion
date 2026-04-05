@@ -344,6 +344,7 @@
                         <label class="req-item"><input type="checkbox" id="reqConfeccion"> Confección</label>
                         <label class="req-item"><input type="checkbox" id="reqDTF"> DTF</label>
                         <label class="req-item"><input type="checkbox" id="reqCorteLaser"> Corte Láser</label>
+                        <label class="req-item"><input type="checkbox" id="reqBordado"> Bordado</label>
                         <label class="req-item siempre">
                             <input type="checkbox" id="reqDespacho" checked style="pointer-events:none;"> 
                             Despacho <span style="font-size:0.7rem;margin-left:2px;">(siempre)</span>
@@ -1405,6 +1406,7 @@
                     confeccion: document.getElementById('reqConfeccion').checked,
                     dtf: document.getElementById('reqDTF').checked,
                     corteLaser: document.getElementById('reqCorteLaser').checked,
+                    bordado: document.getElementById('reqBordado').checked,
                     despacho: document.getElementById('reqDespacho').checked
                 },
                 observaciones: document.getElementById('observaciones').value,

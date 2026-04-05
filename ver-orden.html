@@ -403,6 +403,10 @@
                             <input type="checkbox" id="reqCorteLaser" disabled style="width: 18px; height: 18px;">
                             <span>Corte Láser</span>
                         </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqBordado" disabled style="width: 18px; height: 18px;">
+                            <span>Bordado</span>
+                        </label>
                     </div>
                 </div>
 
@@ -935,6 +939,9 @@
                 }
                 if (document.getElementById('reqCorteLaser')) {
                     document.getElementById('reqCorteLaser').checked = orden.requerimientos.corteLaser || false;
+                }
+                if (document.getElementById('reqBordado')) {
+                    document.getElementById('reqBordado').checked = orden.requerimientos.bordado || false;
                 }
                 if (document.getElementById('reqDespacho')) {
                     document.getElementById('reqDespacho').checked = orden.requerimientos.despacho || false;

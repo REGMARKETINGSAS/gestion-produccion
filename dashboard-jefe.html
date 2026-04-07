@@ -1944,7 +1944,9 @@
                         ? (fila.querySelector('.input-tela-otra-pkg')?.value || 'Otra')
                         : (fila.querySelector('.select-tela-pkg')?.value || ''),
                     cuello: fila.querySelector('.select-cuello-pkg')?.value || '',
-                    marquilla: fila.querySelector('.select-marquilla-pkg')?.value || '',
+                    marquilla: fila.querySelector('.select-marquilla-pkg')?.value === 'Otra'
+                        ? (fila.querySelector('.input-marquilla-otra-pkg')?.value || 'Otra')
+                        : (fila.querySelector('.select-marquilla-pkg')?.value || ''),
                     observaciones: fila.querySelector('.input-obs-pkg')?.value || ''
                 });
             });
@@ -2028,7 +2030,8 @@
             'Pantaloneta': 'pantalonetas', 'Pijama': 'pijamas',
             'Jeans': 'pantalon-mujer-hombre',
             'Totebag': 'cantidad', 'Tula': 'cantidad', 'Mochila': 'cantidad',
-            'Gorra': 'cantidad', 'Toalla': 'cantidad', 'Manga': 'cantidad', 'Delantal': 'cantidad'
+            'Gorra': 'cantidad', 'Toalla': 'cantidad', 'Manga': 'cantidad', 'Delantal': 'cantidad',
+            'Buzo': 'infantil-adulto'
         };
         return mapa[tipoPrenda] || 'infantil-adulto';
     }
@@ -2148,7 +2151,7 @@
 
         const todasLasPrendas = [
             'Camiseta','Camiseta Polo','Blusa','Camisa Manga Corta','Camisa Manga Larga',
-            'Chaqueta','Sudadera','Jogger','Pantaloneta','Pijama','Jeans',
+            'Buzo','Chaqueta','Sudadera','Jogger','Pantaloneta','Pijama','Jeans',
             'Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal'
         ];
 
@@ -2192,7 +2195,7 @@
                 <label style="font-size:0.72rem;font-weight:700;color:#607D8B;
                     text-transform:uppercase;display:block;margin-bottom:6px;">Requerimientos</label>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-                    ${['corte','confeccion','impresion','sublimacion','estampado','dtf','corteLaser','despacho'].map(req => `
+                    ${['corte','confeccion','impresion','sublimacion','estampado','dtf','corteLaser','bordado','despacho'].map(req => `
                     <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;
                         border-radius:8px;border:1.5px solid #E8EDF2;cursor:pointer;
                         font-size:0.78rem;font-weight:600;color:#607D8B;
@@ -2200,7 +2203,7 @@
                         <input type="checkbox" class="req-pkg" data-req="${req}"
                             ${req === 'despacho' ? 'checked' : ''}
                             style="accent-color:#AD1457;width:14px;height:14px;">
-                        ${req === 'corteLaser' ? 'C.Láser' : req === 'dtf' ? 'DTF' : req.charAt(0).toUpperCase() + req.slice(1)}
+                        ${req === 'corteLaser' ? 'C.Láser' : req === 'dtf' ? 'DTF' :  req === 'bordado' ? 'Bordado' : req.charAt(0).toUpperCase() + req.slice(1)}
                     </label>`).join('')}
                 </div>
             </div>
@@ -2231,13 +2234,15 @@
                 </div>
                 <div>
                     <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Marquilla</label>
-                    <select class="select-marquilla-pkg"
-                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                    <select class="select-marquilla-pkg" onchange="toggleOtraMarquillaPkg(this)"
+                        style="...">
                         <option value="">Seleccionar...</option>
-                        <option value="OTRO">OTRO</option>
                         <option value="REG">SCHUSTER</option>
                         <option value="Sin marquilla">Sin marquilla</option>
+                        <option value="Otra">Otra (personalizada)</option>
                     </select>
+                    <input type="text" class="input-marquilla-otra-pkg" placeholder="Nombre de la marquilla..."
+                        style="display:none;margin-top:4px;width:100%;padding:7px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
                 </div>
                 <div>
                     <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Observaciones</label>
@@ -2552,6 +2557,12 @@
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    function toggleOtraMarquillaPkg(sel) {
+        const inp = sel.parentElement.querySelector('.input-marquilla-otra-pkg');
+        inp.style.display = sel.value === 'Otra' ? 'block' : 'none';
+        if (sel.value !== 'Otra') inp.value = '';
     }
     </script>
 </body>

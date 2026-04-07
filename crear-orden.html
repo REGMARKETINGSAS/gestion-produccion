@@ -373,6 +373,7 @@
                                 <option value="Camisa Manga Larga">Camisa Manga Larga</option>
                                 <option value="Pijama">Pijama</option>
                                 <option value="Chaqueta">Chaqueta</option>
+                                <option value="Buzo">Buzo</option>
                             </optgroup>
                             <optgroup label="Pantalones">
                                 <option value="Pantaloneta">Pantaloneta</option>
@@ -411,11 +412,15 @@
                     </div>
                     <div class="form-group" id="campo-molde">
                         <label>Molde</label>
-                        <select id="molde">
+                        <select id="molde" onchange="toggleOtroMolde()">
                             <option value="">Seleccionar...</option>
                             <option value="Normal">Normal</option>
                             <option value="Encogimiento">Encogimiento</option>
+                            <option value="Talla Arriba">Talla Arriba</option>
+                            <option value="Otro">Otro</option>
                         </select>
+                        <input type="text" id="moldeOtro" placeholder="Especifica el molde..."
+                            style="display:none;margin-top:6px;">
                     </div>
                 </div>
 
@@ -455,12 +460,14 @@
                 <div class="form-row" id="campo-marquilla-vacio">
                     <div class="form-group" id="campo-marquilla">
                         <label>Marquilla</label>
-                        <select id="marquilla">
+                        <select id="marquilla" onchange="toggleOtraMarquilla()">
                             <option value="">Seleccionar...</option>
-                            <option value="OTRO">OTRO</option>
                             <option value="REG">SCHUSTER</option>
                             <option value="Sin marquilla">Sin marquilla</option>
+                            <option value="Otra">Otra (personalizada)</option>
                         </select>
+                        <input type="text" id="marquillaOtra" placeholder="Nombre de la marquilla del cliente..."
+                            style="display:none;margin-top:6px;">
                     </div>
                     <div class="form-group"></div>
                 </div>
@@ -948,9 +955,18 @@
                     document.getElementById('tela').value = orden.tela || '';
                     document.getElementById('cuello').value = orden.cuello || '';
                     document.getElementById('colorCuello').value = orden.colorCuello || '';
-                    document.getElementById('marquilla').value = orden.marquilla || '';
+                    // Si la marquilla no es REG ni Sin marquilla, es personalizada
+                    if (orden.marquilla && orden.marquilla !== 'REG' && orden.marquilla !== 'Sin marquilla' && orden.marquilla !== '') {
+                        document.getElementById('marquilla').value = 'Otra';
+                        document.getElementById('marquillaOtra').value = orden.marquilla;
+                        document.getElementById('marquillaOtra').style.display = 'block';
+                    }
                     document.getElementById('ancho').value = orden.ancho || '';
-                    document.getElementById('molde').value = orden.molde || '';
+                    if (orden.molde && orden.molde !== 'Normal' && orden.molde !== 'Encogimiento' && orden.molde !== 'Talla Arriba' && orden.molde !== '') {
+                        document.getElementById('molde').value = 'Otro';
+                        document.getElementById('moldeOtro').value = orden.molde;
+                        document.getElementById('moldeOtro').style.display = 'block';
+                    }
                     document.getElementById('anchoBies').value = orden.anchoBies || '';
                     document.getElementById('dobladillo').value = orden.dobladillo || '';
 
@@ -1303,7 +1319,9 @@
                     : (document.getElementById('tela')?.value || ''),
                 cuello: document.getElementById('cuello')?.value || '',
                 colorCuello: document.getElementById('colorCuello')?.value || '',
-                marquilla: document.getElementById('marquilla')?.value || '',
+                marquilla: document.getElementById('marquilla')?.value === 'Otra'
+                    ? (document.getElementById('marquillaOtra')?.value || 'Otra')
+                    : (document.getElementById('marquilla')?.value || ''),
                 imagenDiseno: imagenBase64,
                 imagenMangaDerecha:   imagenMangaDerecha,
                 imagenMangaIzquierda: imagenMangaIzquierda,
@@ -1395,7 +1413,9 @@
                 }),
                 descripcionPedido: document.getElementById('descripcionPedido')?.value || '',
                 ancho: document.getElementById('ancho')?.value || '',
-                molde: document.getElementById('molde')?.value || '',
+                molde: document.getElementById('molde')?.value === 'Otro'
+                    ? (document.getElementById('moldeOtro')?.value || 'Otro')
+                    : (document.getElementById('molde')?.value || ''),
                 anchoBies: document.getElementById('anchoBies')?.value || '',
                 dobladillo: document.getElementById('dobladillo')?.value || '',
                 requerimientos: {
@@ -1677,6 +1697,11 @@
                 dobladillo: false, anchoBies: false, marquilla: true, 
                 tipoTallas: 'chaquetas', cantidadManual: false 
             },
+            'Buzo': { 
+                tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
+                dobladillo: true, anchoBies: true, marquilla: true, 
+                tipoTallas: 'infantil-adulto', cantidadManual: false 
+            },
             
             // ACCESORIOS - Cantidad manual
             'Totebag': { 
@@ -1830,6 +1855,20 @@
         function toggleOtraTela() {
             const sel = document.getElementById('tela');
             const inp = document.getElementById('telaOtra');
+            inp.style.display = sel.value === 'Otra' ? 'block' : 'none';
+            if (sel.value !== 'Otra') inp.value = '';
+        }
+
+        function toggleOtroMolde() {
+            const sel = document.getElementById('molde');
+            const inp = document.getElementById('moldeOtro');
+            inp.style.display = sel.value === 'Otro' ? 'block' : 'none';
+            if (sel.value !== 'Otro') inp.value = '';
+        }
+
+        function toggleOtraMarquilla() {
+            const sel = document.getElementById('marquilla');
+            const inp = document.getElementById('marquillaOtra');
             inp.style.display = sel.value === 'Otra' ? 'block' : 'none';
             if (sel.value !== 'Otra') inp.value = '';
         }

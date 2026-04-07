@@ -464,7 +464,7 @@
             let enProceso = 0, completadas = 0, pendientes = 0;
 
             ordenes.forEach(orden => {
-                const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k]);
+                const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k] && k !== 'bordado');
                 const estadosRequeridos = areasRequeridas.map(a => orden.estado[a] || 'pendiente');
                 const todasCompletadas = areasRequeridas.length > 0 && estadosRequeridos.every(e => e === 'completado');
                 const algunaEnProceso = estadosRequeridos.some(e => e === 'en-proceso');
@@ -590,7 +590,7 @@
             const iconoFecha = dias < 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias === 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias <= 2 ? '<i class="fas fa-clock"></i>' : '';
             const textoFecha = dias < 0 ? `${Math.abs(dias)}d vencida` : dias === 0 ? 'Hoy' : `${dias}d restantes`;
 
-            const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k]);
+            const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k] && k !== 'bordado');
             const todasCompletadas = areasRequeridas.length > 0 && areasRequeridas.every(a => orden.estado[a] === 'completado');
             const colorBorde = orden.paqueteId ? '#AD1457' : (dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#F57C00' : '#1565C0');
 
@@ -661,7 +661,7 @@
                         ${orden.requerimientos?.estampado  ? generarProceso('Estampado',   'stamp',         orden.estado.estampado)  : ''}
                         ${orden.requerimientos?.dtf        ? generarProceso('DTF',         'layer-group',   orden.estado.dtf)        : ''}
                         ${orden.requerimientos?.corteLaser ? generarProceso('Corte Láser', 'crosshairs',    orden.estado.corteLaser) : ''}
-                        ${orden.requerimientos?.bordado ? `<div class="proceso-item pendiente"><div class="proceso-icon"><i class="fas fa-ring"></i></div><div class="proceso-nombre">Bordado</div><div class="proceso-estado">Requerido</div></div>` : ''}
+                        ${orden.requerimientos?.bordado ? `<div class="proceso-item" style="background:#FFF3E0;border:1.5px solid #FFB74D;"><div class="proceso-icon" style="background:#FFB74D;"><i class="fas fa-ring" style="color:white;"></i></div><div class="proceso-nombre">Bordado</div><div class="proceso-estado" style="color:#E65100;">Requiere bordado</div></div>` : ''}
                         ${orden.requerimientos?.despacho   ? generarProceso('Despacho',    'shipping-fast', orden.estado.despacho)   : ''}
                     </div>
                 </div>`;
@@ -1306,7 +1306,8 @@
         try {
             // Eliminar de Supabase
             // Eliminar imágenes del Storage
-            const ordenAEliminar = ordenes.find(o => o.numeroOrden === numeroOrden);
+            const ordenesGuardadas = JSON.parse(localStorage.getItem('ordenes') || '[]');
+            const ordenAEliminar = ordenesGuardadas.find(o => o.numeroOrden === numeroOrden);
             if (ordenAEliminar) {
                 const imagenesAEliminar = [
                     ordenAEliminar.imagenDiseno,

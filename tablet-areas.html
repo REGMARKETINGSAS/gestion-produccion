@@ -347,6 +347,27 @@
             .area-icon { width:62px; height:62px; font-size:1.7rem; }
         }
     </style>
+
+    <button id="btnVolverArriba" onclick="window.scrollTo({top:0,behavior:'smooth'})" 
+        style="position:fixed;bottom:25px;right:25px;padding:12px 20px;border-radius:12px;
+        background:rgba(0,0,0,0.6);color:white;border:none;font-size:14px;cursor:pointer;
+        display:none;z-index:9999;box-shadow:0 4px 15px rgba(0,0,0,0.3);
+        font-family:Arial,sans-serif;backdrop-filter:blur(10px);
+        transition:background 0.2s;">
+        ▲ Volver arriba
+    </button>
+
+    <script>
+    window.addEventListener('scroll', function() {
+        document.getElementById('btnVolverArriba').style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
+    document.getElementById('btnVolverArriba').addEventListener('mouseenter', function() {
+        this.style.background = 'rgba(0,0,0,0.8)';
+    });
+    document.getElementById('btnVolverArriba').addEventListener('mouseleave', function() {
+        this.style.background = 'rgba(0,0,0,0.6)';
+    });
+    </script>
 </head>
 <body>
     <div class="bg-circles">

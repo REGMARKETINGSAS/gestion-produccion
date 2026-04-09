@@ -2032,6 +2032,7 @@
             'Jeans': 'pantalon-mujer-hombre',
             'Totebag': 'cantidad', 'Tula': 'cantidad', 'Mochila': 'cantidad',
             'Gorra': 'cantidad', 'Toalla': 'cantidad', 'Manga': 'cantidad', 'Delantal': 'cantidad',
+            'Capa de Barberia': 'cantidad',
             'Buzo': 'infantil-adulto'
         };
         return mapa[tipoPrenda] || 'infantil-adulto';
@@ -2153,7 +2154,7 @@
         const todasLasPrendas = [
             'Camiseta','Camiseta Polo','Blusa','Camisa Manga Corta','Camisa Manga Larga',
             'Buzo','Chaqueta','Sudadera','Jogger','Pantaloneta','Pijama','Jeans',
-            'Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal'
+            'Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal','Capa de Barberia'
         ];
 
         fila.style.cssText = `background:#F8FAFF;border:1.5px solid #E3F2FD;
@@ -2236,7 +2237,7 @@
                 <div>
                     <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Marquilla</label>
                     <select class="select-marquilla-pkg" onchange="toggleOtraMarquillaPkg(this)"
-                        style="...">
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
                         <option value="">Seleccionar...</option>
                         <option value="REG">SCHUSTER</option>
                         <option value="Sin marquilla">Sin marquilla</option>

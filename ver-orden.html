@@ -146,11 +146,23 @@
             justify-content: center;
             background: #FAFCFF;
         }
+        .diseno-section {
+            padding: 10px;
+            text-align: center;
+            min-height: 300px;       /* era 200px */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #FAFCFF;
+        }
         .diseno-imagen {
             max-width: 100%;
-            max-height: 350px;
+            min-width: 60%;          /* NUEVO: fuerza que ocupe al menos 60% del ancho */
+            max-height: 500px;       /* era 350px */
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            object-fit: contain;     /* NUEVO: mantiene proporción */
         }
 
         /* TALLAS */
@@ -163,27 +175,27 @@
         .tallas-table thead tr:first-child th {
             background: linear-gradient(135deg, #1565C0, #1976D2);
             color: white;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 700;
-            padding: 12px;
+            padding: 8px;
             border-bottom: 2px solid #0D47A1;
             text-align: center;
             letter-spacing: 0.5px;
         }
         .tallas-table th {
-            padding: 10px 8px;
+            padding: 6px 6px;
             text-align: center;
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             background: #1976D2;
             color: white;
             border-right: 1px solid #0D47A1;
         }
         .tallas-table th:last-child { border-right: none; }
         .tallas-table td {
-            padding: 12px 8px;
+            padding: 8px 6px;
             text-align: center;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: 600;
             border-right: 1px solid #E3F2FD;
             border-bottom: 1px solid #E3F2FD;
@@ -203,9 +215,9 @@
         .total-general {
             background: linear-gradient(135deg, #0D47A1, #1565C0);
             color: white;
-            padding: 16px;
+            padding: 10px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 800;
             letter-spacing: 1px;
         }
@@ -213,6 +225,8 @@
         /* OBSERVACIONES */
         .observaciones-box {
             min-height: 80px;
+            max-height: 120px;        /* NUEVO: limita altura máxima */
+            overflow-y: auto;          /* NUEVO: scroll si es mucho texto */
             padding: 14px;
             background: #F8FAFF;
             border-radius: 10px;
@@ -1175,7 +1189,6 @@
             elemento.style.border = '3px solid #1565C0';
             elemento.style.borderRadius = '0';
 
-            // Forzar color sólido en elementos con gradiente
             const gradientes = document.querySelectorAll('.spec-header, .total-general, .info-seccion-header');
             const estilosOriginales = [];
             gradientes.forEach(el => {
@@ -1183,29 +1196,64 @@
                 el.style.background = '#1565C0';
             });
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-
-            doc.html(elemento, {
-                callback: function(doc) {
-                    elemento.style.border = '';
-                    elemento.style.borderRadius = '';
-                    // Restaurar estilos originales
-                    gradientes.forEach((el, i) => {
-                        el.style.background = estilosOriginales[i];
-                    });
-                    doc.save(`Orden_${document.getElementById('infoNumeroOrden')?.textContent || 'produccion'}.pdf`);
-                },
-                x: 10,
-                y: 10,
-                width: 190,
-                windowWidth: 900,
-                html2canvas: {
-                    scale: 0.21,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff'
+            const todosElementos = elemento.querySelectorAll('*');
+            todosElementos.forEach(el => {
+                const computed = getComputedStyle(el);
+                if (computed.opacity !== '1') {
+                    el.style.opacity = '1';
                 }
+            });
+
+            html2canvas(elemento, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                onclone: (docClone) => {
+                    const clon = docClone.querySelector('.orden-documento');
+
+                    if (clon) {
+                        clon.style.animation = 'none';
+                        clon.style.transform = 'none';
+                        clon.style.opacity = '1';
+                        clon.style.filter = 'none';
+                        clon.style.border = '3px solid #1565C0';
+                        clon.style.borderRadius = '0';
+                    }
+
+                    docClone.querySelectorAll('.spec-header, .total-general, .info-seccion-header')
+                        .forEach(el => {
+                            el.style.background = '#1565C0';
+                        });
+
+                    docClone.querySelectorAll('*').forEach(el => {
+                        el.style.animation = 'none';
+                        el.style.transition = 'none';
+                        el.style.opacity = '1';
+                    });
+                }
+            }).then(canvas => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+
+                const paginaAncho = 190;
+                const paginaAlto = 287;
+
+                const ratio = canvas.width / canvas.height;
+                let finalAncho = paginaAncho;
+                let finalAlto = paginaAncho / ratio;
+
+                if (finalAlto > paginaAlto) {
+                    finalAlto = paginaAlto;
+                    finalAncho = paginaAlto * ratio;
+                }
+
+                const x = (210 - finalAncho) / 2;
+                const y = (297 - finalAlto) / 2;
+
+                const imgData = canvas.toDataURL('image/png');
+                doc.addImage(imgData, 'PNG', x, y, finalAncho, finalAlto);
+                doc.save('Orden_' + (document.getElementById('infoNumeroOrden')?.textContent || 'produccion') + '.pdf');
             });
         }
 

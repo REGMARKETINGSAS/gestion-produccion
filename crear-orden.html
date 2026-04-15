@@ -244,6 +244,15 @@
                 min-width: 480px;
             }
 
+            #seccion-tallas-dama {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #seccion-tallas-dama table {
+                min-width: 480px;
+            }
+
             .tabla-tallas input {
                 width: 40px;
                 padding: 5px 2px;
@@ -579,7 +588,7 @@
                 </div>
 
                 <div id="seccion-tallas-adulto" style="margin-top:16px;">
-                    <p style="font-size:0.82rem;font-weight:700;color:#607D8B;margin-bottom:8px;">TALLAS ADULTO</p>
+                    <p style="font-size:0.82rem;font-weight:700;color:#607D8B;margin-bottom:8px;">TALLAS CABALLERO  </p>
                     <table class="tabla-tallas">
                         <thead><tr>
                             <th>XS</th><th>S</th><th>M</th><th>L</th>
@@ -596,6 +605,26 @@
                             <td><input type="number" id="talla3XL" min="0" value="0" class="talla-input"></td>
                             <td><input type="number" id="talla4XL" min="0" value="0" class="talla-input"></td>
                             <td class="total-cell" id="totalPrendas">0</td>
+                        </tr></tbody>
+                    </table>
+                </div>
+
+                <!-- TALLAS DAMA (solo Camiseta y Polo) -->
+                <div id="seccion-tallas-dama" style="display:none;margin-top:16px;">
+                    <p style="font-size:0.82rem;font-weight:700;color:#E91E63;margin-bottom:8px;"> DAMA</p>
+                    <table class="tabla-tallas">
+                        <thead><tr style="background:#E91E63;">
+                            <th>XS</th><th>S</th><th>M</th><th>L</th><th>XL</th><th>2XL</th>
+                            <th style="background:#C2185B;">TOTAL</th>
+                        </tr></thead>
+                        <tbody><tr>
+                            <td><input type="number" id="tallaDA_XS" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaDA_S" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaDA_M" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaDA_L" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaDA_XL" min="0" value="0" class="talla-input"></td>
+                            <td><input type="number" id="tallaDA_2XL" min="0" value="0" class="talla-input"></td>
+                            <td class="total-cell" id="totalDama">0</td>
                         </tr></tbody>
                     </table>
                 </div>
@@ -1003,7 +1032,8 @@
                             'PT-S':'tallaPTS','PT-M':'tallaPTM','PT-L':'tallaPTL','PT-XL':'tallaPTXL',
                             'PJ-S':'tallaPJS','PJ-M':'tallaPJM','PJ-L':'tallaPJL','PJ-XL':'tallaPJXL',
                             'SD-S':'tallaSD_S','SD-M':'tallaSD_M','SD-L':'tallaSD_L','SD-XL':'tallaSD_XL',
-                            'CH-XS':'tallaCHXS','CH-S':'tallaCHS','CH-M':'tallaCHM','CH-L':'tallaCHL','CH-XL':'tallaCHXL','CH-2XL':'tallaCH2XL','CH-3XL':'tallaCH3XL'
+                            'CH-XS':'tallaCHXS','CH-S':'tallaCHS','CH-M':'tallaCHM','CH-L':'tallaCHL','CH-XL':'tallaCHXL','CH-2XL':'tallaCH2XL','CH-3XL':'tallaCH3XL',
+                            'DA-XS':'tallaDA_XS','DA-S':'tallaDA_S','DA-M':'tallaDA_M','DA-L':'tallaDA_L','DA-XL':'tallaDA_XL','DA-2XL':'tallaDA_2XL',
                         };
 
                         Object.entries(orden.tallas || {}).forEach(([talla, cantidad]) => {
@@ -1105,6 +1135,12 @@
                     if (input) totalChaquetas += parseInt(input.value) || 0;
                 });
                 
+                // Total Dama
+                let totalDama = 0;
+                ['DA_XS', 'DA_S', 'DA_M', 'DA_L', 'DA_XL', 'DA_2XL'].forEach(talla => {
+                    const input = document.getElementById(`talla${talla}`);
+                    if (input) totalDama += parseInt(input.value) || 0;
+                });
                 // Actualizar displays
                 const elemTotal = document.getElementById('totalPrendas');
                 if (elemTotal) elemTotal.textContent = totalInfantilAdulto;
@@ -1126,6 +1162,9 @@
                 
                 const elemCH = document.getElementById('totalChaquetas');
                 if (elemCH) elemCH.textContent = totalChaquetas;
+
+                const elemDA = document.getElementById('totalDama');
+                if (elemDA) elemDA.textContent = totalDama
             }
 
         // Establecer fecha mínima y fecha de pedido actual
@@ -1206,6 +1245,7 @@
                 
                 if (config.tipoTallas === 'infantil-adulto') {
                     totalTallas = parseInt(document.getElementById('totalPrendas')?.textContent) || 0;
+
                 } else if (config.tipoTallas === 'pantalon-mujer-hombre') {
                     const totalMujer = parseInt(document.getElementById('totalPantalonMujer')?.textContent) || 0;
                     const totalHombre = parseInt(document.getElementById('totalPantalonHombre')?.textContent) || 0;
@@ -1218,6 +1258,9 @@
                     totalTallas = parseInt(document.getElementById('totalSudaderas')?.textContent) || 0;
                 } else if (config.tipoTallas === 'chaquetas') {
                     totalTallas = parseInt(document.getElementById('totalChaquetas')?.textContent) || 0;
+                } else if (config.tipoTallas === 'infantil-caballero-dama') {
+                    totalTallas = parseInt(document.getElementById('totalPrendas')?.textContent) || 0;
+                    totalTallas += parseInt(document.getElementById('totalDama')?.textContent) || 0;
                 }
                 
                 if (totalTallas === 0) {
@@ -1410,7 +1453,15 @@
                         'CH-L': parseInt(document.getElementById('tallaCHL')?.value) || 0,
                         'CH-XL': parseInt(document.getElementById('tallaCHXL')?.value) || 0,
                         'CH-2XL': parseInt(document.getElementById('tallaCH2XL')?.value) || 0,
-                        'CH-3XL': parseInt(document.getElementById('tallaCH3XL')?.value) || 0
+                        'CH-3XL': parseInt(document.getElementById('tallaCH3XL')?.value) || 0,
+
+                        // Tallas Dama
+                        'DA-XS': parseInt(document.getElementById('tallaDA_XS')?.value) || 0,
+                        'DA-S': parseInt(document.getElementById('tallaDA_S')?.value) || 0,
+                        'DA-M': parseInt(document.getElementById('tallaDA_M')?.value) || 0,
+                        'DA-L': parseInt(document.getElementById('tallaDA_L')?.value) || 0,
+                        'DA-XL': parseInt(document.getElementById('tallaDA_XL')?.value) || 0,
+                        'DA-2XL': parseInt(document.getElementById('tallaDA_2XL')?.value) || 0
                     }
                 }),
                 descripcionPedido: document.getElementById('descripcionPedido')?.value || '',
@@ -1637,12 +1688,12 @@
             'Camiseta': { 
                 tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
                 dobladillo: true, anchoBies: true, marquilla: true, 
-                tipoTallas: 'infantil-adulto', cantidadManual: false 
+                tipoTallas: 'infantil-caballero-dama', cantidadManual: false, 
             },
             'Camiseta Polo': { 
                 tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
                 dobladillo: true, anchoBies: true, marquilla: true, 
-                tipoTallas: 'infantil-adulto', cantidadManual: false 
+                tipoTallas: 'infantil-caballero-dama', cantidadManual: false 
             },
             'Blusa': { 
                 tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
@@ -1805,6 +1856,8 @@
             const seccionPijamas = document.getElementById('seccion-pijamas');
             const seccionSudaderas = document.getElementById('seccion-sudaderas');
             const seccionChaquetas = document.getElementById('seccion-chaquetas');
+            const seccionDama = document.getElementById('seccion-tallas-dama');
+
             
             if (seccionInfantil) seccionInfantil.style.display = 'none';
             if (seccionAdulto) seccionAdulto.style.display = 'none';
@@ -1814,9 +1867,14 @@
             if (seccionPijamas) seccionPijamas.style.display = 'none';
             if (seccionSudaderas) seccionSudaderas.style.display = 'none';
             if (seccionChaquetas) seccionChaquetas.style.display = 'none';
-            
+            if (seccionDama) seccionDama.style.display = 'none';
+
             // Mostrar las secciones correctas según tipoTallas
-            if (config.tipoTallas === 'infantil-adulto') {
+            if (config.tipoTallas === 'infantil-caballero-dama') {
+                if (seccionInfantil) seccionInfantil.style.display = 'block';
+                if (seccionAdulto) seccionAdulto.style.display = 'block';
+                if (seccionDama) seccionDama.style.display = 'block';
+            } else if (config.tipoTallas === 'infantil-adulto') {
                 if (seccionInfantil) seccionInfantil.style.display = 'block';
                 if (seccionAdulto) seccionAdulto.style.display = 'block';
             } else if (config.tipoTallas === 'pantalon-mujer-hombre') {

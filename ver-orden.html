@@ -560,7 +560,7 @@
                 <table class="tallas-table" style="border: 3px solid #0D47A1; border-top: none; margin-top: 0;">
                     <thead>
                         <tr>
-                            <th colspan="9" style="background: #1565C0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #0D47A1;">TALLAS ADULTO</th>
+                            <th colspan="9" style="background: #1565C0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #0D47A1;">TALLAS CABALLERO</th>
                         </tr>
                         <tr>
                             <th style="background: #1565C0; border-right: 2px solid #0D47A1; border-bottom: 2px solid #0D47A1;">XS</th>
@@ -585,6 +585,39 @@
                             <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cant3XL">0</td>
                             <td style="border-right: 2px solid #BBDEFB; border-bottom: none;" id="cant4XL">0</td>
                             <td style="background: #E3F2FD !important; font-weight: bold; font-size: 1.3rem; color: #1565C0 !important; border-right: none; border-bottom: none;" id="totalAdulto">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TALLAS DAMA -->
+            <div id="seccion-dama-vista" style="display: none;">
+                <table class="tallas-table" style="border: 3px solid #AD1457; border-top: none; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th colspan="7" style="background: #E91E63; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #AD1457;">
+                                <i class="fas fa-female"></i> TALLAS DAMA
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="background: #E91E63; border-right: 2px solid #AD1457; border-bottom: 2px solid #AD1457;">XS</th>
+                            <th style="background: #E91E63; border-right: 2px solid #AD1457; border-bottom: 2px solid #AD1457;">S</th>
+                            <th style="background: #E91E63; border-right: 2px solid #AD1457; border-bottom: 2px solid #AD1457;">M</th>
+                            <th style="background: #E91E63; border-right: 2px solid #AD1457; border-bottom: 2px solid #AD1457;">L</th>
+                            <th style="background: #E91E63; border-right: 2px solid #AD1457; border-bottom: 2px solid #AD1457;">XL</th>
+                            <th style="background: #E91E63; border-right: 2px solid #AD1457; border-bottom: 2px solid #AD1457;">2XL</th>
+                            <th style="background: #E91E63; border-right: none; border-bottom: 2px solid #AD1457;">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border-right: 2px solid #F8BBD0; border-bottom: none;" id="cantDA_XS">0</td>
+                            <td style="border-right: 2px solid #F8BBD0; border-bottom: none;" id="cantDA_S">0</td>
+                            <td style="border-right: 2px solid #F8BBD0; border-bottom: none;" id="cantDA_M">0</td>
+                            <td style="border-right: 2px solid #F8BBD0; border-bottom: none;" id="cantDA_L">0</td>
+                            <td style="border-right: 2px solid #F8BBD0; border-bottom: none;" id="cantDA_XL">0</td>
+                            <td style="border-right: 2px solid #F8BBD0; border-bottom: none;" id="cantDA_2XL">0</td>
+                            <td style="background: #FCE4EC !important; font-weight: bold; font-size: 1.3rem; color: #AD1457 !important; border-right: none; border-bottom: none;" id="totalDamaVista">0</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1144,6 +1177,27 @@
                     const totalElem = document.getElementById('totalChaquetasVista');
                     if (totalElem) totalElem.textContent = totalCH;
                 }
+
+                // Tallas Dama
+                const tallasDA = ['DA-XS', 'DA-S', 'DA-M', 'DA-L', 'DA-XL', 'DA-2XL'];
+                let totalDA = 0;
+                let tieneDA = false;
+
+                tallasDA.forEach(talla => {
+                    const cantidad = orden.tallas[talla] || 0;
+                    totalDA += cantidad;
+                    if (cantidad > 0) tieneDA = true;
+                    const id = 'cant' + talla.replace('-', '_');
+                    const elem = document.getElementById(id);
+                    if (elem) elem.textContent = cantidad;
+                });
+
+                if (tieneDA) {
+                    const seccion = document.getElementById('seccion-dama-vista');
+                    if (seccion) seccion.style.display = 'block';
+                    const totalElem = document.getElementById('totalDamaVista');
+                    if (totalElem) totalElem.textContent = totalDA;
+                }
                 // Ocultar Infantil/Adulto si tiene otras tallas
                     if (tienePM || tienePH || tienePT || tienePJ || tieneSD || tieneCH) {
                         const seccionInfantil = document.getElementById('seccion-infantil-vista');
@@ -1153,7 +1207,8 @@
                     }
 
                 // Actualizar total general incluyendo tallas nuevas
-                totalGeneral += totalPM + totalPH + totalPT + totalPJ + totalSD + totalCH;
+                totalGeneral += totalPM + totalPH + totalPT + totalPJ + totalSD + totalCH + totalDA;
+
 
                 if (document.getElementById('totalInfantil')) {
                     document.getElementById('totalInfantil').textContent = totalInfantil;

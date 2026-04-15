@@ -2024,7 +2024,7 @@
 
     function obtenerTipoTallas(tipoPrenda) {
         const mapa = {
-            'Camiseta': 'infantil-adulto', 'Camiseta Polo': 'infantil-adulto',
+            'Camiseta': 'infantil-caballero-dama', 'Camiseta Polo': 'infantil-caballero-dama',
             'Blusa': 'infantil-adulto', 'Camisa Manga Corta': 'infantil-adulto',
             'Camisa Manga Larga': 'infantil-adulto',
             'Chaqueta': 'chaquetas', 'Sudadera': 'sudaderas', 'Jogger': 'sudaderas',
@@ -2084,6 +2084,51 @@
                 </table>
             </div>`;
         }
+        if (tipoTallas === 'infantil-caballero-dama') {
+            return `
+            <div style="overflow-x:auto;margin-top:10px;">
+                <div style="font-size:0.72rem;font-weight:700;color:#607D8B;margin-bottom:3px;">INFANTIL</div>
+                <table style="${tablaStyle}">
+                    <thead><tr style="background:#1565C0;">
+                        <th style="${thStyle}">2T</th><th style="${thStyle}">3T</th><th style="${thStyle}">4T</th>
+                        <th style="${thStyle}">5T</th><th style="${thStyle}">2</th><th style="${thStyle}">4</th>
+                        <th style="${thStyle}">6</th><th style="${thStyle}">8</th><th style="${thStyle}">10</th>
+                        <th style="${thStyle}">12</th><th style="${thStyle}">14</th><th style="${thStyle}">16</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['2T','3T','4T','5T','2','4','6','8','10','12','14','16'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+                <div style="font-size:0.72rem;font-weight:700;color:#1565C0;margin:6px 0 3px;">CABALLERO</div>
+                <table style="${tablaStyle} margin-top:4px;">
+                    <thead><tr style="background:#1565C0;">
+                        <th style="${thStyle}">XS</th><th style="${thStyle}">S</th><th style="${thStyle}">M</th>
+                        <th style="${thStyle}">L</th><th style="${thStyle}">XL</th><th style="${thStyle}">2XL</th>
+                        <th style="${thStyle}">3XL</th><th style="${thStyle}">4XL</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['XS','S','M','L','XL','2XL','3XL','4XL'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+                <div style="font-size:0.72rem;font-weight:700;color:#E91E63;margin:6px 0 3px;"> DAMA</div>
+                <table style="${tablaStyle} margin-top:4px;">
+                    <thead><tr style="background:#E91E63;">
+                        <th style="${thStyle}">XS</th><th style="${thStyle}">S</th><th style="${thStyle}">M</th>
+                        <th style="${thStyle}">L</th><th style="${thStyle}">XL</th><th style="${thStyle}">2XL</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['XS','S','M','L','XL','2XL'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="DA-${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+            </div>`;
+        }
+        
 
         if (tipoTallas === 'chaquetas' || tipoTallas === 'sudaderas' || tipoTallas === 'pantalonetas' || tipoTallas === 'pijamas') {
             const colorMap = {

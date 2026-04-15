@@ -327,6 +327,14 @@ function convertirOrdenParaBD(orden) {
         talla_chaqueta_2xl: (orden.tallas && orden.tallas['CH-2XL']) || 0,
         talla_chaqueta_3xl: (orden.tallas && orden.tallas['CH-3XL']) || 0,
 
+        // Tallas Dama
+        talla_dama_xs: (orden.tallas && orden.tallas['DA-XS']) || 0,
+        talla_dama_s: (orden.tallas && orden.tallas['DA-S']) || 0,
+        talla_dama_m: (orden.tallas && orden.tallas['DA-M']) || 0,
+        talla_dama_l: (orden.tallas && orden.tallas['DA-L']) || 0,
+        talla_dama_xl: (orden.tallas && orden.tallas['DA-XL']) || 0,
+        talla_dama_2xl: (orden.tallas && orden.tallas['DA-2XL']) || 0,
+
         imagen_manga_derecha:   orden.imagenMangaDerecha   || null,
         imagen_manga_izquierda: orden.imagenMangaIzquierda || null,
         imagen_frente:          orden.imagenFrente          || null,
@@ -351,6 +359,8 @@ function convertirOrdenParaBD(orden) {
         progreso_estampado: orden.progreso_estampado || {},
         progreso_corte_laser: orden.progreso_corte_laser || {},
         paquete_id: orden.paqueteId || null
+
+
     };
 }
 
@@ -456,7 +466,15 @@ function convertirOrdenDesdeBD(ordenBD) {
             'CH-L': ordenBD.talla_chaqueta_l || 0,
             'CH-XL': ordenBD.talla_chaqueta_xl || 0,
             'CH-2XL': ordenBD.talla_chaqueta_2xl || 0,
-            'CH-3XL': ordenBD.talla_chaqueta_3xl || 0
+            'CH-3XL': ordenBD.talla_chaqueta_3xl || 0,
+
+            // Dama
+            'DA-XS': ordenBD.talla_dama_xs || 0,
+            'DA-S': ordenBD.talla_dama_s || 0,
+            'DA-M': ordenBD.talla_dama_m || 0,
+            'DA-L': ordenBD.talla_dama_l || 0,
+            'DA-XL': ordenBD.talla_dama_xl || 0,
+            'DA-2XL': ordenBD.talla_dama_2xl || 0,
         },
 
         

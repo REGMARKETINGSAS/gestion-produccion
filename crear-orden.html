@@ -399,6 +399,9 @@
                                 <option value="Manga">Manga</option>
                                 <option value="Delantal">Delantal</option>
                                 <option value="Capa de Barberia">Capa de Barbería</option>
+                                <option value="Visera">Visera</option>
+                                <option value="Bandera">Bandera</option>
+                                <option value="Gorro de Cocina">Gorro de Cocina</option>
                             </optgroup>
                         </select>
                     </div>
@@ -836,7 +839,7 @@
                 img.onload = async function() {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    const max = 400;
+                    const max = 800;
                     if (w > max || h > max) {
                         if (w > h) { h = Math.round(h * max / w); w = max; }
                         else { w = Math.round(w * max / h); h = max; }
@@ -852,9 +855,9 @@
                             callback(resultado.url);
                         } else {
                             // Fallback a base64 si falla el Storage
-                            callback(canvas.toDataURL('image/jpeg', 0.35));
+                            callback(canvas.toDataURL('image/jpeg', 0.82));
                         }
-                    }, 'image/jpeg', 0.35);
+                    }, 'image/jpeg', 0.82);
                 };
                 img.src = e.target.result;
             };
@@ -1191,7 +1194,7 @@
                 img.onload = async function() {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    const maxSize = 400;
+                    const maxSize = 1200;
                     if (w > maxSize || h > maxSize) {
                         if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
                         else       { w = Math.round(w * maxSize / h); h = maxSize; }
@@ -1206,7 +1209,7 @@
                         if (resultado.success) {
                             imagenBase64 = resultado.url;
                         } else {
-                            imagenBase64 = canvas.toDataURL('image/jpeg', 0.35);
+                            imagenBase64 = canvas.toDataURL('image/jpeg', 0.85);
                         }
 
                         const kb = Math.round(blob.size / 1024);
@@ -1217,7 +1220,7 @@
                                 <i class="fas fa-check-circle"></i> Imagen cargada: ${file.name}
                                 <span style="color:#607D8B;font-size:0.82rem;margin-left:6px;">(${kb}KB)</span>
                             </p>`;
-                    }, 'image/jpeg', 0.35);
+                    }, 'image/jpeg', 0.82);
                 };
                 img.src = event.target.result;
             };
@@ -1796,7 +1799,22 @@
                 tela: true, cuello: false, colorCuello: false, molde: false, ancho: false, 
                 dobladillo: false, anchoBies: false, marquilla: false, 
                 tipoTallas: false, cantidadManual: true 
-            }
+            },
+            'Visera': { 
+                tela: false, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Bandera': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: true, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
+            'Gorro de Cocina': { 
+                tela: true, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
             
         };
 

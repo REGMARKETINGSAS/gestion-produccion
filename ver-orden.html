@@ -136,20 +136,11 @@
         .spec-row:last-child { border-bottom: none; }
 
         /* DISEÑO */
+        
         .diseno-section {
-            padding: 20px;
+            padding: 6px;
             text-align: center;
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #FAFCFF;
-        }
-        .diseno-section {
-            padding: 10px;
-            text-align: center;
-            min-height: 300px;       /* era 200px */
+            min-height: 550px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -157,12 +148,11 @@
             background: #FAFCFF;
         }
         .diseno-imagen {
-            max-width: 100%;
-            min-width: 60%;          /* NUEVO: fuerza que ocupe al menos 60% del ancho */
-            max-height: 500px;       /* era 350px */
+            width: 80%;
+            max-height: 480px;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            object-fit: contain;     /* NUEVO: mantiene proporción */
+            object-fit: contain;
         }
 
         /* TALLAS */
@@ -215,7 +205,7 @@
         .total-general {
             background: linear-gradient(135deg, #0D47A1, #1565C0);
             color: white;
-            padding: 10px;
+            padding: 8px;
             text-align: center;
             font-size: 1.1rem;
             font-weight: 800;
@@ -851,7 +841,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="font-size: 2rem; font-weight: bold; color: #2196F3; padding: 30px;" id="cantidadTotalDisplay">0</td>
+                        <td style="font-size: 1.8rem; font-weight: bold; color: #2196F3; padding: 10px;" id="cantidadTotalDisplay">0</td>
                     </tr>
                 </tbody>
             </table>
@@ -1241,22 +1231,12 @@
 
         function descargarPDF() {
             const elemento = document.querySelector('.orden-documento');
-            elemento.style.border = '3px solid #1565C0';
-            elemento.style.borderRadius = '0';
 
             const gradientes = document.querySelectorAll('.spec-header, .total-general, .info-seccion-header');
             const estilosOriginales = [];
             gradientes.forEach(el => {
                 estilosOriginales.push(el.style.background);
                 el.style.background = '#1565C0';
-            });
-
-            const todosElementos = elemento.querySelectorAll('*');
-            todosElementos.forEach(el => {
-                const computed = getComputedStyle(el);
-                if (computed.opacity !== '1') {
-                    el.style.opacity = '1';
-                }
             });
 
             html2canvas(elemento, {
@@ -1266,21 +1246,18 @@
                 backgroundColor: '#ffffff',
                 onclone: (docClone) => {
                     const clon = docClone.querySelector('.orden-documento');
-
                     if (clon) {
                         clon.style.animation = 'none';
                         clon.style.transform = 'none';
                         clon.style.opacity = '1';
                         clon.style.filter = 'none';
-                        clon.style.border = '3px solid #1565C0';
+                        clon.style.border = 'none';
                         clon.style.borderRadius = '0';
+                        clon.style.maxWidth = 'none';
+                        clon.style.width = '1200px';
                     }
-
                     docClone.querySelectorAll('.spec-header, .total-general, .info-seccion-header')
-                        .forEach(el => {
-                            el.style.background = '#1565C0';
-                        });
-
+                        .forEach(el => { el.style.background = '#1565C0'; });
                     docClone.querySelectorAll('*').forEach(el => {
                         el.style.animation = 'none';
                         el.style.transition = 'none';
@@ -1288,11 +1265,15 @@
                     });
                 }
             }).then(canvas => {
+                gradientes.forEach((el, i) => {
+                    el.style.background = estilosOriginales[i];
+                });
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
 
-                const paginaAncho = 190;
-                const paginaAlto = 287;
+                const paginaAncho = 210;
+                const paginaAlto = 297;
 
                 const ratio = canvas.width / canvas.height;
                 let finalAncho = paginaAncho;
@@ -1303,11 +1284,8 @@
                     finalAncho = paginaAlto * ratio;
                 }
 
-                const x = (210 - finalAncho) / 2;
-                const y = (297 - finalAlto) / 2;
-
-                const imgData = canvas.toDataURL('image/png');
-                doc.addImage(imgData, 'PNG', x, y, finalAncho, finalAlto);
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                doc.addImage(imgData, 'JPEG', 0, 0, paginaAncho, paginaAlto);
                 doc.save('Orden_' + (document.getElementById('infoNumeroOrden')?.textContent || 'produccion') + '.pdf');
             });
         }

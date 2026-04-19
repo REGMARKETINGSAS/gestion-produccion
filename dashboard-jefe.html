@@ -1941,10 +1941,15 @@
                     tipo, tallas, cantidadTotal, imagen, tipoTallas, 
                     requerimientos: reqs,
                     logos: fila._logos || {},
+                    impresora: fila.querySelector('.select-impresora-pkg')?.value || '',
                     tela: fila.querySelector('.select-tela-pkg')?.value === 'Otra'
                         ? (fila.querySelector('.input-tela-otra-pkg')?.value || 'Otra')
                         : (fila.querySelector('.select-tela-pkg')?.value || ''),
                     cuello: fila.querySelector('.select-cuello-pkg')?.value || '',
+                        colorCuello: fila.querySelector('.input-color-cuello-pkg')?.value || '',
+                        anchoBies: fila.querySelector('.input-ancho-bies-pkg')?.value || '',
+                        dobladillo: fila.querySelector('.select-dobladillo-pkg')?.value || '',
+                        molde: fila.querySelector('.select-molde-pkg')?.value || '',
                     marquilla: fila.querySelector('.select-marquilla-pkg')?.value === 'Otra'
                         ? (fila.querySelector('.input-marquilla-otra-pkg')?.value || 'Otra')
                         : (fila.querySelector('.select-marquilla-pkg')?.value || ''),
@@ -1985,11 +1990,16 @@
                     imagenesAdicionales: prenda.logos?.adicionales || [],
                     descripcionPedido: `Parte de ${paqueteId}`,
                     requerimientos: prenda.requerimientos,
+                    impresora: prenda.impresora || '',
                     tela: prenda.tela || '',
                     cuello: prenda.cuello || '',
                     colorCuello: '',
                     marquilla: prenda.marquilla || '',
-                    ancho: '', molde: '', anchoBies: '', dobladillo: '',
+                    ancho: '',
+                    molde: prenda.molde || '',
+                    anchoBies: prenda.anchoBies || '',
+                    dobladillo: prenda.dobladillo || '',
+                    colorCuello: prenda.colorCuello || '',
                     observaciones: prenda.observaciones || `Paquete ${paqueteId} — ${prendas.length} prendas`,
                     fechaCreacion: new Date().toISOString(),
                     estado: {
@@ -2032,7 +2042,7 @@
             'Jeans': 'pantalon-mujer-hombre',
             'Totebag': 'cantidad', 'Tula': 'cantidad', 'Mochila': 'cantidad',
             'Gorra': 'cantidad', 'Toalla': 'cantidad', 'Manga': 'cantidad', 'Delantal': 'cantidad',
-            'Capa de Barberia': 'cantidad',
+            'Capa de Barberia': 'cantidad', 'Visera': 'cantidad', 'Bandera': 'cantidad', 'Gorro de Cocina': 'cantidad',
             'Buzo': 'infantil-adulto'
         };
         return mapa[tipoPrenda] || 'infantil-adulto';
@@ -2196,11 +2206,8 @@
         fila.id = idFila;
         fila._imagenBase64 = null;
 
-        const todasLasPrendas = [
-            'Camiseta','Camiseta Polo','Blusa','Camisa Manga Corta','Camisa Manga Larga',
-            'Buzo','Chaqueta','Sudadera','Jogger','Pantaloneta','Pijama','Jeans',
-            'Totebag','Tula','Mochila','Gorra','Toalla','Manga','Delantal','Capa de Barberia'
-        ];
+        const todasLasPrendas = null; // ya no se usa
+
 
         fila.style.cssText = `background:#F8FAFF;border:1.5px solid #E3F2FD;
             border-radius:14px;padding:14px;position:relative;`;
@@ -2227,7 +2234,35 @@
                         style="width:100%;padding:9px 12px;border:1.5px solid #E8EDF2;
                         border-radius:10px;font-family:'Outfit',sans-serif;font-size:0.9rem;color:#1A2332;">
                         <option value="">Seleccionar tipo...</option>
-                        ${todasLasPrendas.map(p => `<option value="${p}">${p}</option>`).join('')}
+                        <optgroup label="Prendas con Tallas Completas">
+                        <option value="Camiseta">Camiseta</option>
+                        <option value="Camiseta Polo">Camiseta Tipo Polo</option>
+                        <option value="Blusa">Blusa</option>
+                        <option value="Camisa Manga Corta">Camisa Manga Corta</option>
+                        <option value="Camisa Manga Larga">Camisa Manga Larga</option>
+                        <option value="Pijama">Pijama</option>
+                        <option value="Chaqueta">Chaqueta</option>
+                        <option value="Buzo">Buzo</option>
+                    </optgroup>
+                    <optgroup label="Pantalones">
+                        <option value="Pantaloneta">Pantaloneta</option>
+                        <option value="Jeans">Jeans</option>
+                        <option value="Sudadera">Sudadera</option>
+                        <option value="Jogger">Jogger</option>
+                    </optgroup>
+                    <optgroup label="Accesorios (Cantidad Manual)">
+                        <option value="Totebag">Totebag</option>
+                        <option value="Tula">Tula</option>
+                        <option value="Mochila">Mochila</option>
+                        <option value="Gorra">Gorra</option>
+                        <option value="Toalla">Toalla</option>
+                        <option value="Manga">Manga</option>
+                        <option value="Delantal">Delantal</option>
+                        <option value="Capa de Barberia">Capa de Barbería</option>
+                        <option value="Visera">Visera</option>
+                        <option value="Bandera">Bandera</option>
+                        <option value="Gorro de Cocina">Gorro de Cocina</option>
+                    </optgroup>
                     </select>
                 </div>
                 <!-- Eliminar -->
@@ -2257,6 +2292,17 @@
             <!-- Especificaciones -->
             <div class="specs-pkg" style="display:none;margin-top:10px;grid-template-columns:1fr 1fr;gap:8px;">
                 <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Impresora</label>
+                    <select class="select-impresora-pkg"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="EPSON">EPSON</option>
+                        <option value="KAROLG">KAROLG</option>
+                        <option value="GRAFTECK">GRAFTECK</option>
+                        <option value="OTRA">OTRA</option>
+                    </select>
+                </div>
+                <div>
                     <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Tela</label>
                     <select class="select-tela-pkg" onchange="toggleOtraTelapkg(this)"
                         style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
@@ -2277,6 +2323,35 @@
                         <option value="V">En V</option>
                         <option value="Sublimado">Sublimado</option>
                         <option value="Polo">Polo</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Color Cuello</label>
+                    <input type="text" class="input-color-cuello-pkg" placeholder="Ej: Blanco"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Ancho Bies</label>
+                    <input type="text" class="input-ancho-bies-pkg" placeholder="Ej: 3cm"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Dobladillo</label>
+                    <select class="select-dobladillo-pkg"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="En Manga">En Manga</option>
+                        <option value="En Bies">En Bies</option>
+                        <option value="Ambos">Ambos (Manga y Bies)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.72rem;font-weight:700;color:#607D8B;text-transform:uppercase;display:block;margin-bottom:4px;">Molde</label>
+                    <select class="select-molde-pkg"
+                        style="width:100%;padding:8px 10px;border:1.5px solid #E8EDF2;border-radius:8px;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">Seleccionar...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Encogimiento">Encogimiento</option>
                     </select>
                 </div>
                 <div>
@@ -2385,7 +2460,7 @@
                                 img.onload = async function() {
                                     const canvas = document.createElement('canvas');
                                     let w = img.width, h = img.height;
-                                    const max = 400;
+                                    const max = 800;
                                     if (w > max || h > max) {
                                         if (w > h) { h = Math.round(h*max/w); w = max; }
                                         else { w = Math.round(w*max/h); h = max; }
@@ -2395,13 +2470,13 @@
                                     canvas.toBlob(async function(blob) {
                                         const archivoComprimido = new File([blob], file.name, { type:'image/jpeg' });
                                         const resultado = await window.DB.subirImagen(archivoComprimido, 'logos');
-                                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.35);
+                                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.82);
                                         if (!fila._logos) fila._logos = {};
                                         fila._logos[zona] = urlFinal;
                                         uploadDiv.innerHTML = `<img src="${urlFinal}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;">`;
                                         uploadDiv.style.border = '2px solid #2E7D32';
                                         uploadDiv.style.padding = '0';
-                                    }, 'image/jpeg', 0.35);
+                                    }, 'image/jpeg', 0.82);
                                 };
                                 img.src = e.target.result;
                             };
@@ -2428,7 +2503,7 @@
                 img.onload = async function() {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    const max = 400;
+                    const max = 800;
                     if (w > max || h > max) {
                         if (w > h) { h = Math.round(h * max / w); w = max; }
                         else { w = Math.round(w * max / h); h = max; }
@@ -2440,14 +2515,14 @@
                         const archivoComprimido = new File([blob], file.name, { type: 'image/jpeg' });
                         const resultado = await window.DB.subirImagen(archivoComprimido, 'paquetes');
 
-                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.35);
+                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.82);
                         fila._imagenBase64 = urlFinal;
 
                         uploadDiv.innerHTML = `<img src="${urlFinal}"
                             style="width:68px;height:68px;object-fit:cover;border-radius:8px;">`;
                         uploadDiv.style.border = '2px solid #2E7D32';
                         uploadDiv.style.padding = '0';
-                    }, 'image/jpeg', 0.35);
+                    }, 'image/jpeg', 0.82);
                 };
                 img.src = e.target.result;
             };
@@ -2581,7 +2656,7 @@
                 img.onload = async function() {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    const max = 400;
+                    const max = 800;
                     if (w > max || h > max) {
                         if (w > h) { h = Math.round(h*max/w); w = max; }
                         else { w = Math.round(w*max/h); h = max; }
@@ -2591,14 +2666,14 @@
                     canvas.toBlob(async function(blob) {
                         const archivoComprimido = new File([blob], file.name, { type:'image/jpeg' });
                         const resultado = await window.DB.subirImagen(archivoComprimido, 'logos');
-                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.35);
+                        const urlFinal = resultado.success ? resultado.url : canvas.toDataURL('image/jpeg', 0.82);
                         if (!fila._logos) fila._logos = {};
                         if (!fila._logos.adicionales) fila._logos.adicionales = [];
                         fila._logos.adicionales.push(urlFinal);
                         uploadDiv.innerHTML = `<img src="${urlFinal}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;">`;
                         uploadDiv.style.border = '2px solid #2E7D32';
                         uploadDiv.style.padding = '0';
-                    }, 'image/jpeg', 0.35);
+                    }, 'image/jpeg', 0.82);
                 };
                 img.src = e.target.result;
             };

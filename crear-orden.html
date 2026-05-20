@@ -383,6 +383,7 @@
                                 <option value="Pijama">Pijama</option>
                                 <option value="Chaqueta">Chaqueta</option>
                                 <option value="Buzo">Buzo</option>
+                                <option value="Top">Top</option>
                             </optgroup>
                             <optgroup label="Pantalones">
                                 <option value="Pantaloneta">Pantaloneta</option>
@@ -402,6 +403,7 @@
                                 <option value="Visera">Visera</option>
                                 <option value="Bandera">Bandera</option>
                                 <option value="Gorro de Cocina">Gorro de Cocina</option>
+                                <option value="Mug">Mug</option>
                             </optgroup>
                         </select>
                     </div>
@@ -1758,6 +1760,17 @@
                 dobladillo: true, anchoBies: true, marquilla: true, 
                 tipoTallas: 'infantil-adulto', cantidadManual: false 
             },
+
+            'Top': { 
+                tela: true, cuello: true, colorCuello: true, molde: true, ancho: true, 
+                dobladillo: true, anchoBies: true, marquilla: true, 
+                tipoTallas: 'solo-dama', cantidadManual: false 
+            },
+            'Mug': { 
+                tela: false, cuello: false, colorCuello: false, molde: false, ancho: false, 
+                dobladillo: false, anchoBies: false, marquilla: false, 
+                tipoTallas: false, cantidadManual: true 
+            },
             
             // ACCESORIOS - Cantidad manual
             'Totebag': { 
@@ -1906,6 +1919,9 @@
                 if (seccionSudaderas) seccionSudaderas.style.display = 'block';
             } else if (config.tipoTallas === 'chaquetas') {
                 if (seccionChaquetas) seccionChaquetas.style.display = 'block';
+            } else if (config.tipoTallas === 'solo-dama') {
+                const seccionDama = document.getElementById('seccion-tallas-dama');
+                if (seccionDama) seccionDama.style.display = 'block';
             }
         }
 

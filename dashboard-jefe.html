@@ -2043,7 +2043,9 @@
             'Totebag': 'cantidad', 'Tula': 'cantidad', 'Mochila': 'cantidad',
             'Gorra': 'cantidad', 'Toalla': 'cantidad', 'Manga': 'cantidad', 'Delantal': 'cantidad',
             'Capa de Barberia': 'cantidad', 'Visera': 'cantidad', 'Bandera': 'cantidad', 'Gorro de Cocina': 'cantidad',
-            'Buzo': 'infantil-adulto'
+            'Buzo': 'infantil-adulto',
+            'Top': 'solo-dama',
+            'Mug': 'cantidad'
         };
         return mapa[tipoPrenda] || 'infantil-adulto';
     }
@@ -2126,6 +2128,24 @@
                 </table>
                 <div style="font-size:0.72rem;font-weight:700;color:#E91E63;margin:6px 0 3px;"> DAMA</div>
                 <table style="${tablaStyle} margin-top:4px;">
+                    <thead><tr style="background:#E91E63;">
+                        <th style="${thStyle}">XS</th><th style="${thStyle}">S</th><th style="${thStyle}">M</th>
+                        <th style="${thStyle}">L</th><th style="${thStyle}">XL</th><th style="${thStyle}">2XL</th>
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['XS','S','M','L','XL','2XL'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="DA-${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>
+            </div>`;
+        }
+
+        if (tipoTallas === 'solo-dama') {
+            return `
+            <div style="overflow-x:auto;margin-top:10px;">
+                <div style="font-size:0.72rem;font-weight:700;color:#E91E63;margin-bottom:3px;">TALLAS DAMA</div>
+                <table style="${tablaStyle}">
                     <thead><tr style="background:#E91E63;">
                         <th style="${thStyle}">XS</th><th style="${thStyle}">S</th><th style="${thStyle}">M</th>
                         <th style="${thStyle}">L</th><th style="${thStyle}">XL</th><th style="${thStyle}">2XL</th>
@@ -2243,6 +2263,7 @@
                         <option value="Pijama">Pijama</option>
                         <option value="Chaqueta">Chaqueta</option>
                         <option value="Buzo">Buzo</option>
+                        <option value="Top">Top</option>
                     </optgroup>
                     <optgroup label="Pantalones">
                         <option value="Pantaloneta">Pantaloneta</option>
@@ -2262,6 +2283,7 @@
                         <option value="Visera">Visera</option>
                         <option value="Bandera">Bandera</option>
                         <option value="Gorro de Cocina">Gorro de Cocina</option>
+                        <option value="Mug">Mug</option>
                     </optgroup>
                     </select>
                 </div>

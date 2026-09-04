@@ -292,6 +292,44 @@
         .paquete-grupo .orden-card:last-child {
             border-radius: 0 0 14px 14px;
         }
+
+        /* ORGANIZACIÓN POR VENCIMIENTO */
+        .orden-seccion { margin-bottom:24px; }
+        .orden-seccion-header {
+            position:sticky; top:10px; z-index:20;
+            display:flex; align-items:center; justify-content:space-between; gap:12px;
+            padding:13px 18px; border-radius:14px; cursor:pointer; color:white;
+            box-shadow:0 6px 18px rgba(0,0,0,0.18); user-select:none;
+        }
+        .orden-seccion-header.vencidas { background:linear-gradient(135deg,#B71C1C,#E53935); }
+        .orden-seccion-header.prioridad { background:linear-gradient(135deg,#E65100,#FB8C00); }
+        .orden-seccion-header.en-tiempo { background:linear-gradient(135deg,#0D47A1,#1976D2); }
+        .orden-seccion-titulo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:1rem; }
+        .orden-seccion-meta { display:flex; align-items:center; gap:10px; }
+        .orden-seccion-badge {
+            background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px;
+            font-size:0.76rem; font-weight:700; white-space:nowrap;
+        }
+        .orden-seccion-chevron { transition:transform .25s ease; }
+        .orden-seccion-lista {
+            margin-top:8px; max-height:62vh; overflow-y:auto; padding:4px 4px 2px;
+            scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.45) rgba(255,255,255,0.08);
+        }
+        .orden-seccion-lista.cerrada { display:none; }
+        .orden-seccion-lista::-webkit-scrollbar { width:8px; }
+        .orden-seccion-lista::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.38); border-radius:10px; }
+        .orden-card.orden-prioridad {
+            border-left-width:7px !important;
+            box-shadow:0 8px 24px rgba(245,124,0,0.18);
+        }
+        .orden-card.orden-prioridad .orden-numero { color:#E65100; }
+        .orden-card.orden-vencida { border-left-width:7px !important; }
+        @media (max-width:600px) {
+            .orden-seccion-header { top:4px; padding:11px 13px; }
+            .orden-seccion-titulo { font-size:.9rem; }
+            .orden-seccion-lista { max-height:58vh; }
+        }
+
         @media (max-width: 600px) {
             .page-header h1 { font-size: 1.5rem; }
 
@@ -430,20 +468,28 @@
             window.location.href = 'index.html';
         }
         async function cargarOrdenes() {
-            // Guardar paquetes abiertos
+            // Guardar estados abiertos antes de refrescar
+            const seccionesAbiertas = {};
+            document.querySelectorAll('.orden-seccion-lista').forEach(el => {
+                const id = el.id.replace('contenido-seccion-', '');
+                seccionesAbiertas[id] = !el.classList.contains('cerrada');
+            });
+
             const paquetesAbiertos = new Set();
             document.querySelectorAll('[id^="contenido-"]').forEach(el => {
+                if (el.id.startsWith('contenido-seccion-')) return;
                 if (el.style.maxHeight && el.style.maxHeight !== '0px') {
                     paquetesAbiertos.add(el.id.replace('contenido-', ''));
                 }
             });
-            
+
             let ordenes = await window.DB.obtenerOrdenes();
             if (!ordenes || ordenes.length === 0) {
                 ordenes = JSON.parse(localStorage.getItem('ordenes') || '[]');
             } else {
                 localStorage.setItem('ordenes', JSON.stringify(ordenes));
             }
+
             const listaOrdenes = document.getElementById('listaOrdenes');
 
             if (ordenes.length === 0) {
@@ -452,7 +498,7 @@
                         <i class="fas fa-inbox"></i>
                         <h3>No hay órdenes de producción</h3>
                         <p>Crea la primera orden desde el formulario</p>
-                        <a href="crear-orden.html" class="btn btn-primary" style="margin-top: 20px; text-decoration: none;">
+                        <a href="crear-orden.html" class="btn btn-primary" style="margin-top:20px;text-decoration:none;">
                             <i class="fas fa-plus"></i> Crear Primera Orden
                         </a>
                     </div>`;
@@ -464,11 +510,11 @@
             let enProceso = 0, completadas = 0, pendientes = 0;
 
             ordenes.forEach(orden => {
-                const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k] && k !== 'bordado');
+                const areasRequeridas = Object.keys(orden.requerimientos || {})
+                    .filter(k => orden.requerimientos[k] && k !== 'bordado');
                 const estadosRequeridos = areasRequeridas.map(a => orden.estado[a] || 'pendiente');
                 const todasCompletadas = areasRequeridas.length > 0 && estadosRequeridos.every(e => e === 'completado');
                 const algunaEnProceso = estadosRequeridos.some(e => e === 'en-proceso');
-                const todasPendientes = estadosRequeridos.every(e => e === 'pendiente');
                 if (todasCompletadas) completadas++;
                 else if (algunaEnProceso) enProceso++;
                 else pendientes++;
@@ -476,95 +522,133 @@
 
             actualizarEstadisticas(totalOrdenes, enProceso, completadas, pendientes);
 
-            ordenes.sort((a, b) => {
-                const dA = new Date(a.fechaEntrega + 'T12:00:00');
-                const dB = new Date(b.fechaEntrega + 'T12:00:00');
-                return dA - dB;
-            });
+            const diasParaEntrega = orden => {
+                const fecha = new Date(`${orden.fechaEntrega}T12:00:00`);
+                const hoy = new Date();
+                fecha.setHours(0,0,0,0);
+                hoy.setHours(0,0,0,0);
+                return Math.ceil((fecha - hoy) / 86400000);
+            };
 
-            // Separar órdenes con paquete y sin paquete
-            const conPaquete = ordenes.filter(o => o.paqueteId);
-            const sinPaquete = ordenes.filter(o => !o.paqueteId);
-
-            // Agrupar por paqueteId
+            // Paquetes: se ubican según la fecha de entrega más próxima de sus órdenes.
             const paquetes = {};
-            conPaquete.forEach(o => {
+            ordenes.filter(o => o.paqueteId).forEach(o => {
                 if (!paquetes[o.paqueteId]) paquetes[o.paqueteId] = [];
                 paquetes[o.paqueteId].push(o);
             });
 
-            let html = '';
+            const clasificar = dias => {
+                if (dias < 0) return 'vencidas';
+                if (dias <= 3) return 'prioridad';
+                return 'en-tiempo';
+            };
 
-            // Renderizar paquetes primero
-            Object.entries(paquetes).forEach(([paqueteId, ordenesPaquete]) => {
-                const totalPrendas = ordenesPaquete.reduce((sum, o) => {
-                    return sum + (o.cantidadTotal || Object.values(o.tallas || {}).reduce((s, v) => s + v, 0));
-                }, 0);
-                const cliente = ordenesPaquete[0].cliente;
-                const fechaEntrega = ordenesPaquete[0].fechaEntrega;
+            const grupos = {
+                vencidas: { titulo:'Vencidas', icon:'fa-triangle-exclamation', clase:'vencidas', ordenes:[], defaultOpen:false },
+                prioridad: { titulo:'Prioridad · Vencen pronto', icon:'fa-clock', clase:'prioridad', ordenes:[], defaultOpen:true },
+                'en-tiempo': { titulo:'En tiempo', icon:'fa-calendar-check', clase:'en-tiempo', ordenes:[], defaultOpen:true }
+            };
 
-                const fechaObj = new Date(fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
-                const hoy2 = new Date(); hoy2.setHours(0,0,0,0);
-                const dias2 = Math.ceil((fechaObj - hoy2) / 86400000);
-                const textoFecha2 = dias2 < 0 ? `${Math.abs(dias2)}d vencida` : dias2 === 0 ? 'Hoy' : `${dias2}d restantes`;
-                const colorFecha2 = dias2 < 0 ? '#C62828' : dias2 === 0 ? '#FF6D00' : dias2 <= 2 ? '#F57C00' : '#607D8B';
-
-                const resumenPrendas = ordenesPaquete.map(o => o.tipoPrenda).join(' · ');
-                const pkgUid = paqueteId.replace(/[^a-zA-Z0-9]/g, '');
-
-                html += `
-                <div class="paquete-grupo" id="grupo-${pkgUid}">
-                    <div class="paquete-header" style="cursor:pointer;" onclick="togglePaquete('${pkgUid}')">
-                        <div class="paquete-header-info">
-                            <i class="fas fa-layer-group" style="font-size:1.3rem;"></i>
-                            <div>
-                                <div class="paquete-id">${paqueteId}${ordenesPaquete[0].arte ? ` — ${ordenesPaquete[0].arte}` : ''}</div>
-                                <div class="paquete-cliente">${cliente}</div>
-                                <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);margin-top:2px;">${resumenPrendas}</div>
-                            </div>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span class="paquete-badge">${ordenesPaquete.length} prendas · ${totalPrendas} uds</span>
-                            <span style="font-size:0.78rem;font-weight:700;
-                                background:rgba(255,255,255,0.92);
-                                color:${dias2 < 0 ? '#C62828' : dias2 === 0 ? '#FF6D00' : dias2 <= 2 ? '#F57C00' : '#37474F'};
-                                padding:3px 10px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.5);">
-                                ${textoFecha2}
-                            </span>
-                            <i class="fas fa-chevron-down" id="chevron-${pkgUid}"
-                                style="color:white;font-size:0.9rem;transition:transform 0.3s;"></i>
-                        </div>
-                    </div>
-                    ${(() => {
-                        const todasListas = ordenesPaquete.every(o => {
-                            const areas = Object.keys(o.requerimientos || {}).filter(k => o.requerimientos[k]);
-                            return areas.length > 0 && areas.every(a => o.estado[a] === 'completado');
-                        });
-                        return todasListas ? `
-                        <div style="background:rgba(0,0,0,0.15);padding:10px 20px;
-                            display:flex;justify-content:flex-end;">
-                            <button onclick="event.stopPropagation();completarPaquete('${paqueteId}')"
-                                style="padding:8px 18px;border:none;border-radius:10px;cursor:pointer;
-                                background:linear-gradient(135deg,#1B5E20,#43A047);color:white;
-                                font-weight:700;font-size:0.85rem;font-family:'Outfit',sans-serif;
-                                box-shadow:0 4px 14px rgba(27,94,32,0.4);
-                                display:inline-flex;align-items:center;gap:7px;">
-                                <i class="fas fa-check-double"></i> Mover paquete al historial
-                            </button>
-                        </div>` : '';
-                    })()}
-                    <div id="contenido-${pkgUid}" style="max-height:0;overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1);">
-                        ${ordenesPaquete.map(orden => renderOrdenCard(orden)).join('')}
-                    </div>
-                </div>`;
+            // Añadir órdenes normales
+            ordenes.filter(o => !o.paqueteId).forEach(o => {
+                grupos[clasificar(diasParaEntrega(o))].ordenes.push({ tipo:'orden', orden:o, fecha:diasParaEntrega(o) });
             });
 
-            // Renderizar órdenes normales
-            html += sinPaquete.map(orden => renderOrdenCard(orden)).join('');
+            // Añadir paquetes completos al grupo correspondiente
+            Object.entries(paquetes).forEach(([paqueteId, ordenesPaquete]) => {
+                const dias = Math.min(...ordenesPaquete.map(diasParaEntrega));
+                grupos[clasificar(dias)].ordenes.push({
+                    tipo:'paquete', paqueteId, ordenes:ordenesPaquete, fecha:dias
+                });
+            });
+
+            // Más recientes primero en vencidas; en las demás, primero lo que vence antes.
+            Object.values(grupos).forEach(grupo => {
+                grupo.ordenes.sort((a,b) => {
+                    if (grupo.clase === 'vencidas') return b.fecha - a.fecha;
+                    return a.fecha - b.fecha;
+                });
+            });
+
+            function renderPaquete(paquete) {
+                const { paqueteId, ordenes: ordenesPaquete } = paquete;
+                const totalPrendas = ordenesPaquete.reduce((sum, o) =>
+                    sum + (o.cantidadTotal || Object.values(o.tallas || {}).reduce((s,v) => s + v, 0)), 0);
+                const cliente = ordenesPaquete[0].cliente;
+                const fechaEntrega = ordenesPaquete.reduce((min, o) => o.fechaEntrega < min ? o.fechaEntrega : min, ordenesPaquete[0].fechaEntrega);
+                const dias = diasParaEntrega({ fechaEntrega });
+                const textoFecha = dias < 0 ? `${Math.abs(dias)}d vencida` : dias === 0 ? 'Hoy' : `${dias}d restantes`;
+                const uid = `pkg-${String(paqueteId).replace(/[^a-zA-Z0-9]/g,'')}`;
+                const resumenPrendas = ordenesPaquete.map(o => o.tipoPrenda).join(' · ');
+
+                const todasListas = ordenesPaquete.every(o => {
+                    const areas = Object.keys(o.requerimientos || {}).filter(k => o.requerimientos[k]);
+                    return areas.length > 0 && areas.every(a => o.estado[a] === 'completado');
+                });
+
+                return `
+                    <div class="paquete-grupo" id="grupo-${uid}">
+                        <div class="paquete-header" style="cursor:pointer;" onclick="togglePaquete('${uid}')">
+                            <div class="paquete-header-info">
+                                <i class="fas fa-layer-group" style="font-size:1.3rem;"></i>
+                                <div>
+                                    <div class="paquete-id">${paqueteId}${ordenesPaquete[0].arte ? ` — ${ordenesPaquete[0].arte}` : ''}</div>
+                                    <div class="paquete-cliente">${cliente}</div>
+                                    <div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-top:2px;">${resumenPrendas}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span class="paquete-badge">${ordenesPaquete.length} prendas · ${totalPrendas} uds</span>
+                                <span style="font-size:.78rem;font-weight:700;background:rgba(255,255,255,.92);color:${dias<0?'#C62828':dias<=3?'#E65100':'#37474F'};padding:3px 10px;border-radius:20px;border:1.5px solid rgba(255,255,255,.5);">${textoFecha}</span>
+                                <i class="fas fa-chevron-down" id="chevron-${uid}" style="color:white;font-size:.9rem;transition:transform .3s;"></i>
+                            </div>
+                        </div>
+                        ${todasListas ? `
+                        <div style="background:rgba(0,0,0,.15);padding:10px 20px;display:flex;justify-content:flex-end;">
+                            <button onclick="event.stopPropagation();completarPaquete('${paqueteId}')" style="padding:8px 18px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#1B5E20,#43A047);color:white;font-weight:700;font-size:.85rem;font-family:'Outfit',sans-serif;box-shadow:0 4px 14px rgba(27,94,32,.4);display:inline-flex;align-items:center;gap:7px;">
+                                <i class="fas fa-check-double"></i> Mover paquete al historial
+                            </button>
+                        </div>` : ''}
+                        <div id="contenido-${uid}" style="max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1);">
+                            ${ordenesPaquete.map(o => renderOrdenCard(o)).join('')}
+                        </div>
+                    </div>`;
+            }
+
+            let html = '';
+            Object.entries(grupos).forEach(([key, grupo]) => {
+                const abierto = Object.prototype.hasOwnProperty.call(seccionesAbiertas, key)
+                    ? seccionesAbiertas[key]
+                    : grupo.defaultOpen;
+                const cerradaClass = abierto ? '' : ' cerrada';
+                const transform = abierto ? 'rotate(180deg)' : 'rotate(0deg)';
+
+                html += `
+                    <section class="orden-seccion" data-seccion="${key}">
+                        <div class="orden-seccion-header ${grupo.clase}" onclick="toggleSeccionOrdenes('${key}')">
+                            <div class="orden-seccion-titulo">
+                                <i class="fas ${grupo.icon}"></i>
+                                <span>${grupo.titulo}</span>
+                            </div>
+                            <div class="orden-seccion-meta">
+                                <span class="orden-seccion-badge">${grupo.ordenes.length} grupos</span>
+                                <i class="fas fa-chevron-down orden-seccion-chevron" id="chevron-seccion-${key}" style="transform:${transform};"></i>
+                            </div>
+                        </div>
+                        <div class="orden-seccion-lista${cerradaClass}" id="contenido-seccion-${key}">
+                            ${grupo.ordenes.length ? grupo.ordenes.map(item =>
+                                item.tipo === 'orden' ? renderOrdenCard(item.orden) : renderPaquete(item)
+                            ).join('') : `
+                                <div style="background:rgba(255,255,255,.9);border-radius:12px;padding:18px;text-align:center;color:#607D8B;margin:4px 0 0;">
+                                    No hay órdenes en esta categoría.
+                                </div>`}
+                        </div>
+                    </section>`;
+            });
 
             listaOrdenes.innerHTML = html;
 
-            // Restaurar paquetes que estaban abiertos
+            // Restaurar paquetes abiertos
             paquetesAbiertos.forEach(pkgUid => {
                 const contenido = document.getElementById(`contenido-${pkgUid}`);
                 const chevron = document.getElementById(`chevron-${pkgUid}`);
@@ -576,73 +660,74 @@
                     if (header) header.classList.add('abierto');
                 }
             });
-                    }
+        }
 
-        function renderOrdenCard(orden) {
+        function toggleSeccionOrdenes(key) {
+            const contenido = document.getElementById(`contenido-seccion-${key}`);
+            const chevron = document.getElementById(`chevron-seccion-${key}`);
+            if (!contenido) return;
+            const abierta = !contenido.classList.contains('cerrada');
+            contenido.classList.toggle('cerrada', abierta);
+            if (chevron) chevron.style.transform = abierta ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        
+function renderOrdenCard(orden) {
             const totalPrendas = orden.cantidadTotal || Object.values(orden.tallas || {}).reduce((sum, val) => sum + val, 0);
 
-            const fechaObj = new Date(orden.fechaEntrega + 'T12:00:00'); fechaObj.setHours(0,0,0,0);
+            const fechaObj = new Date(`${orden.fechaEntrega}T12:00:00`); fechaObj.setHours(0,0,0,0);
             const hoy = new Date(); hoy.setHours(0,0,0,0);
             const dias = Math.ceil((fechaObj - hoy) / 86400000);
-            const colorFecha = dias < 0 ? 'white' : dias === 0 ? 'white' : dias <= 2 ? '#F57C00' : '#607D8B';
-            const bgFecha = dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#FFF8E1' : '#EEF2F7';
-            const borderFecha = dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#FFE082' : '#E0E0E0';
-            const iconoFecha = dias < 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias === 0 ? '<i class="fas fa-circle-exclamation"></i>' : dias <= 2 ? '<i class="fas fa-clock"></i>' : '';
-            const textoFecha = dias < 0 ? `${Math.abs(dias)}d vencida` : dias === 0 ? 'Hoy' : `${dias}d restantes`;
 
-            const areasRequeridas = Object.keys(orden.requerimientos || {}).filter(k => orden.requerimientos[k] && k !== 'bordado');
+            const esVencida = dias < 0;
+            const esPrioridad = dias >= 0 && dias <= 3;
+            const colorFecha = esVencida || dias === 0 ? 'white' : esPrioridad ? '#E65100' : '#607D8B';
+            const bgFecha = esVencida ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 3 ? '#FFF3E0' : '#EEF2F7';
+            const borderFecha = esVencida ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 3 ? '#FFB74D' : '#E0E0E0';
+            const iconoFecha = esVencida || dias === 0
+                ? '<i class="fas fa-circle-exclamation"></i>'
+                : esPrioridad ? '<i class="fas fa-clock"></i>' : '';
+            const textoFecha = esVencida ? `${Math.abs(dias)}d vencida` : dias === 0 ? 'Hoy' : `${dias}d restantes`;
+
+            const areasRequeridas = Object.keys(orden.requerimientos || {})
+                .filter(k => orden.requerimientos[k] && k !== 'bordado');
             const todasCompletadas = areasRequeridas.length > 0 && areasRequeridas.every(a => orden.estado[a] === 'completado');
-            const colorBorde = orden.paqueteId ? '#AD1457' : (dias < 0 ? '#C62828' : dias === 0 ? '#FF6D00' : dias <= 2 ? '#F57C00' : '#1565C0');
+            const colorBorde = orden.paqueteId ? '#AD1457' : esVencida ? '#C62828' : dias === 0 ? '#FF6D00' : esPrioridad ? '#F57C00' : '#1565C0';
+            const claseUrgencia = esVencida ? 'orden-vencida' : esPrioridad ? 'orden-prioridad' : '';
 
             return `
-                <div class="orden-card" style="border-left-color:${colorBorde};">
+                <div class="orden-card ${claseUrgencia}" style="border-left-color:${colorBorde};">
                     <div class="orden-header">
                         <div style="display:flex;gap:14px;align-items:flex-start;">
                             ${orden.imagenDiseno
-                                ? `<img src="${orden.imagenDiseno}" class="orden-imagen-preview"
-                                    onclick="ampliarImagen('${orden.imagenDiseno.replace(/'/g, "\\'")}')" alt="Diseño">`
-                                : `<div style="width:80px;height:80px;border-radius:12px;background:#F0F4F8;
-                                    display:flex;align-items:center;justify-content:center;
-                                    border:2px solid #E8EDF2;flex-shrink:0;">
+                                ? `<img src="${orden.imagenDiseno}" class="orden-imagen-preview" onclick="ampliarImagen('${orden.imagenDiseno.replace(/'/g, "\\'")}')" alt="Diseño">`
+                                : `<div style="width:80px;height:80px;border-radius:12px;background:#F0F4F8;display:flex;align-items:center;justify-content:center;border:2px solid #E8EDF2;flex-shrink:0;">
                                     <i class="fas fa-tshirt" style="font-size:2rem;color:#CBD5E0;"></i>
                                 </div>`
                             }
                             <div>
                                 <div class="orden-numero">${orden.numeroOrden}</div>
                                 <div class="orden-cliente">${orden.cliente}</div>
-                                <div style="font-size:0.82rem;color:#607D8B;margin-top:2px;">${orden.tipoPrenda}</div>
-                                ${orden.paqueteId ? `<span style="font-size:0.75rem;padding:3px 8px;border-radius:20px;background:#FCE4EC;color:#AD1457;font-weight:700;display:inline-block;margin-top:4px;"><i class="fas fa-layer-group"></i> ${orden.paqueteId}</span>` : ''}
+                                <div style="font-size:.82rem;color:#607D8B;margin-top:2px;">${orden.tipoPrenda}</div>
+                                ${orden.paqueteId ? `<span style="font-size:.75rem;padding:3px 8px;border-radius:20px;background:#FCE4EC;color:#AD1457;font-weight:700;display:inline-block;margin-top:4px;"><i class="fas fa-layer-group"></i> ${orden.paqueteId}</span>` : ''}
                             </div>
                         </div>
 
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
                             <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
-                                    border-radius:20px;font-size:0.78rem;font-weight:600;
-                                    background:${bgFecha};color:${colorFecha};border:1.5px solid ${borderFecha};">
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:${bgFecha};color:${colorFecha};border:1.5px solid ${borderFecha};${esPrioridad && !esVencida ? 'box-shadow:0 0 0 2px rgba(245,124,0,.12);' : ''}">
                                     <i class="fas fa-calendar-alt"></i>
-                                    ${iconoFecha} ${new Date(orden.fechaEntrega + 'T12:00:00').toLocaleDateString('es-ES')} · ${textoFecha}
+                                    ${iconoFecha} ${fechaObj.toLocaleDateString('es-ES')} · ${textoFecha}
                                 </span>
-                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
-                                    border-radius:20px;font-size:0.78rem;font-weight:600;
-                                    background:#EEF2F7;color:#1565C0;">
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.78rem;font-weight:600;background:#EEF2F7;color:#1565C0;">
                                     <i class="fas fa-boxes"></i> ${totalPrendas} prendas
                                 </span>
                             </div>
                             <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-                                <button class="btn-accion ver" onclick="event.stopPropagation();verOrdenCompleta('${orden.numeroOrden}')">
-                                    <i class="fas fa-eye"></i> Ver
-                                </button>
-                                <button class="btn-accion editar" onclick="event.stopPropagation();editarOrden('${orden.numeroOrden}')">
-                                    <i class="fas fa-edit"></i> Editar
-                                </button>
-                                <button class="btn-accion eliminar" onclick="event.stopPropagation();eliminarOrden('${orden.numeroOrden}')">
-                                    <i class="fas fa-trash"></i> Eliminar
-                                </button>
-                                ${todasCompletadas ? `
-                                    <button class="btn-accion completar" onclick="event.stopPropagation();completarOrdenJefe('${orden.numeroOrden}')">
-                                        <i class="fas fa-check-double"></i> Mover al Historial
-                                    </button>` : ''}
+                                <button class="btn-accion ver" onclick="event.stopPropagation();verOrdenCompleta('${orden.numeroOrden}')"><i class="fas fa-eye"></i> Ver</button>
+                                <button class="btn-accion editar" onclick="event.stopPropagation();editarOrden('${orden.numeroOrden}')"><i class="fas fa-edit"></i> Editar</button>
+                                <button class="btn-accion eliminar" onclick="event.stopPropagation();eliminarOrden('${orden.numeroOrden}')"><i class="fas fa-trash"></i> Eliminar</button>
+                                ${todasCompletadas ? `<button class="btn-accion completar" onclick="event.stopPropagation();completarOrdenJefe('${orden.numeroOrden}')"><i class="fas fa-check-double"></i> Mover al Historial</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -654,20 +739,21 @@
                     </div>
 
                     <div class="proceso-grid">
-                        ${orden.requerimientos?.corte      ? generarProceso('Corte',       'cut',           orden.estado.corte)      : ''}
-                        ${orden.requerimientos?.confeccion ? generarProceso('Confección',  'tshirt',        orden.estado.confeccion) : ''}
-                        ${orden.requerimientos?.impresion  ? generarProceso('Impresión',   'print',         orden.estado.impresion)  : ''}
-                        ${orden.requerimientos?.sublimacion? generarProceso('Sublimación', 'fill-drip',     orden.estado.sublimacion): ''}
-                        ${orden.requerimientos?.estampado  ? generarProceso('Estampado',   'stamp',         orden.estado.estampado)  : ''}
-                        ${orden.requerimientos?.dtf        ? generarProceso('DTF',         'layer-group',   orden.estado.dtf)        : ''}
-                        ${orden.requerimientos?.corteLaser ? generarProceso('Corte Láser', 'crosshairs',    orden.estado.corteLaser) : ''}
+                        ${orden.requerimientos?.corte ? generarProceso('Corte','cut',orden.estado.corte) : ''}
+                        ${orden.requerimientos?.confeccion ? generarProceso('Confección','tshirt',orden.estado.confeccion) : ''}
+                        ${orden.requerimientos?.impresion ? generarProceso('Impresión','print',orden.estado.impresion) : ''}
+                        ${orden.requerimientos?.sublimacion ? generarProceso('Sublimación','fill-drip',orden.estado.sublimacion) : ''}
+                        ${orden.requerimientos?.estampado ? generarProceso('Estampado','stamp',orden.estado.estampado) : ''}
+                        ${orden.requerimientos?.dtf ? generarProceso('DTF','layer-group',orden.estado.dtf) : ''}
+                        ${orden.requerimientos?.corteLaser ? generarProceso('Corte Láser','crosshairs',orden.estado.corteLaser) : ''}
                         ${orden.requerimientos?.bordado ? `<div class="proceso-item" style="background:#FFF3E0;border:1.5px solid #FFB74D;"><div class="proceso-icon" style="background:#FFB74D;"><i class="fas fa-ring" style="color:white;"></i></div><div class="proceso-nombre">Bordado</div><div class="proceso-estado" style="color:#E65100;">Requiere bordado</div></div>` : ''}
-                        ${orden.requerimientos?.despacho   ? generarProceso('Despacho',    'shipping-fast', orden.estado.despacho)   : ''}
+                        ${orden.requerimientos?.despacho ? generarProceso('Despacho','shipping-fast',orden.estado.despacho) : ''}
                     </div>
                 </div>`;
         }
 
-        function generarProceso(nombre, icon, estado) {
+        
+function generarProceso(nombre, icon, estado) {
             const estadosTexto = {
                 'pendiente': 'Pendiente',
                 'en-proceso': 'En Proceso',

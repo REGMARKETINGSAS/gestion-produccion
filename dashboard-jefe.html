@@ -2152,6 +2152,20 @@ function generarProceso(nombre, icon, estado) {
         const inputStyle = `width:44px;text-align:center;border:1.5px solid #E8EDF2;padding:5px 2px;
             border-radius:6px;font-size:0.85rem;font-weight:600;font-family:'Outfit',sans-serif;`;
 
+        // Tabla de tallas de niño 4 a 16 (prefijo: PTN, PJN, SDN, CHN, PN, TPN)
+        const tablaNino = (prefijo, titulo, color) => `
+                <div style="font-size:0.72rem;font-weight:700;color:${color};margin:6px 0 3px;">${titulo}</div>
+                <table style="${tablaStyle} margin-top:4px;">
+                    <thead><tr style="background:${color};">
+                        ${['4','6','8','10','12','14','16'].map(t => `<th style="${thStyle}">${t}</th>`).join('')}
+                    </tr></thead>
+                    <tbody><tr>
+                        ${['4','6','8','10','12','14','16'].map(t =>
+                            `<td style="${tdStyle}"><input type="number" class="input-talla-pkg" data-talla="${prefijo}-${t}" min="0" value="0" style="${inputStyle}"></td>`
+                        ).join('')}
+                    </tr></tbody>
+                </table>`;
+
         if (tipoTallas === 'infantil-adulto') {
             return `
             <div style="overflow-x:auto;margin-top:10px;">
@@ -2242,6 +2256,7 @@ function generarProceso(nombre, icon, estado) {
                         ).join('')}
                     </tr></tbody>
                 </table>
+                ${tablaNino('TPN', 'NIÑA', '#E91E63')}
             </div>`;
         }
         
@@ -2268,6 +2283,7 @@ function generarProceso(nombre, icon, estado) {
                         }).join('')}
                     </tr></tbody>
                 </table>
+                ${tablaNino({ chaquetas: 'CHN', sudaderas: 'SDN', pantalonetas: 'PTN', pijamas: 'PJN' }[tipoTallas], 'NIÑO', color)}
             </div>`;
         }
 
@@ -2298,6 +2314,7 @@ function generarProceso(nombre, icon, estado) {
                         ).join('')}
                     </tr></tbody>
                 </table>
+                ${tablaNino('PN', 'NIÑO', '#2E7D32')}
             </div>`;
         }
 

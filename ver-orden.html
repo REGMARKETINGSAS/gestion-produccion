@@ -829,6 +829,9 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- TALLAS NIÑO (pantaloneta, pijama, sudadera, chaqueta, pantalón, top) - se llena por JS -->
+            <div id="seccion-tallas-nino-vista"></div>
         </div>
 
         <!-- CANTIDAD TOTAL (solo si NO tiene tallas) -->
@@ -1188,8 +1191,48 @@
                     const totalElem = document.getElementById('totalDamaVista');
                     if (totalElem) totalElem.textContent = totalDA;
                 }
+                // Tallas Niño 4 a 16
+                const gruposNino = [
+                    ['PTN', 'TALLAS PANTALONETAS NIÑO', '#FF9800', '#E65100', '#FFF3E0'],
+                    ['PJN', 'TALLAS PIJAMAS NIÑO', '#9C27B0', '#6A1B9A', '#F3E5F5'],
+                    ['SDN', 'TALLAS SUDADERAS/JOGGERS NIÑO', '#2E7D32', '#1B5E20', '#E8F5E9'],
+                    ['CHN', 'TALLAS CHAQUETAS NIÑO', '#4527A0', '#311B92', '#EDE7F6'],
+                    ['PN', 'TALLAS PANTALÓN NIÑO', '#2E7D32', '#1B5E20', '#E8F5E9'],
+                    ['TPN', 'TALLAS NIÑA', '#E91E63', '#AD1457', '#FCE4EC']
+                ];
+                const tallasNinoLista = ['4', '6', '8', '10', '12', '14', '16'];
+                let totalNino = 0;
+                let tieneNino = false;
+                let htmlNino = '';
+                gruposNino.forEach(([g, titulo, color, borde, fondo]) => {
+                    const cantidades = tallasNinoLista.map(t => parseInt(orden.tallas[`${g}-${t}`]) || 0);
+                    const totalGrupo = cantidades.reduce((a, b) => a + b, 0);
+                    if (totalGrupo === 0) return;
+                    tieneNino = true;
+                    totalNino += totalGrupo;
+                    const thS = `background:${color};border-right:2px solid ${borde};border-bottom:2px solid ${borde};`;
+                    htmlNino += `
+                    <table class="tallas-table" style="border:3px solid ${borde};margin-top:15px;">
+                        <thead>
+                            <tr><th colspan="${tallasNinoLista.length + 1}" style="background:${color};padding:12px;font-size:1.1rem;color:white;border-bottom:3px solid ${borde};">
+                                <i class="fas fa-child"></i> ${titulo}
+                            </th></tr>
+                            <tr>
+                                ${tallasNinoLista.map(t => `<th style="${thS}">${t}</th>`).join('')}
+                                <th style="${thS}border-right:none;">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody><tr>
+                            ${cantidades.map(c => `<td style="border-right:2px solid ${fondo};border-bottom:none;">${c}</td>`).join('')}
+                            <td style="background:${fondo} !important;font-weight:bold;font-size:1.3rem;color:${borde} !important;border-right:none;border-bottom:none;">${totalGrupo}</td>
+                        </tr></tbody>
+                    </table>`;
+                });
+                const contNino = document.getElementById('seccion-tallas-nino-vista');
+                if (contNino) contNino.innerHTML = htmlNino;
+
                 // Ocultar Infantil/Adulto si tiene otras tallas
-                    if (tienePM || tienePH || tienePT || tienePJ || tieneSD || tieneCH) {
+                    if (tienePM || tienePH || tienePT || tienePJ || tieneSD || tieneCH || tieneNino) {
                         const seccionInfantil = document.getElementById('seccion-infantil-vista');
                         const seccionAdulto = document.getElementById('seccion-adulto-vista');
                         if (seccionInfantil) seccionInfantil.style.display = 'none';
@@ -1197,7 +1240,7 @@
                     }
 
                 // Actualizar total general incluyendo tallas nuevas
-                totalGeneral += totalPM + totalPH + totalPT + totalPJ + totalSD + totalCH + totalDA;
+                totalGeneral += totalPM + totalPH + totalPT + totalPJ + totalSD + totalCH + totalDA + totalNino;
 
 
                 if (document.getElementById('totalInfantil')) {

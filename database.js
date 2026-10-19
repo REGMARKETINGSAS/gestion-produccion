@@ -11,6 +11,38 @@ const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==========================================
+// TALLAS DE NIÑO (4 a 16)
+// Se guardan en la columna JSONB "tallas_nino" de la tabla ordenes.
+// Prefijos: PTN = Pantaloneta, PJN = Pijama, SDN = Sudadera/Jogger,
+//           CHN = Chaqueta, PN = Pantalón/Jeans, TPN = Top niña
+// ==========================================
+const PREFIJOS_TALLAS_NINO = ['PTN', 'PJN', 'SDN', 'CHN', 'PN', 'TPN'];
+
+function esTallaNino(clave) {
+    return PREFIJOS_TALLAS_NINO.some(p => clave.startsWith(p + '-'));
+}
+
+// Si la columna tallas_nino aún no existe en Supabase, se reintenta sin ella
+// para que la app siga funcionando como antes.
+function errorPorColumnaTallasNino(error) {
+    return error && /tallas_nino/.test(error.message || '');
+}
+
+async function guardarConReintento(operacion, ordenBD) {
+    let resultado = await operacion(ordenBD);
+    if (errorPorColumnaTallasNino(resultado.error)) {
+        console.warn('⚠️ Falta la columna tallas_nino en Supabase. Guardando sin tallas de niño.');
+        const tieneNino = Object.values(ordenBD.tallas_nino || {}).some(v => v > 0);
+        if (tieneNino) {
+            alert('⚠️ Las tallas de NIÑO no se pudieron guardar: falta actualizar la base de datos (columna tallas_nino). El resto de la orden sí se guardó.');
+        }
+        const { tallas_nino, ...sinNino } = ordenBD;
+        resultado = await operacion(sinNino);
+    }
+    return resultado;
+}
+
+// ==========================================
 // FUNCIONES PARA ÓRDENES
 // ==========================================
 
@@ -42,10 +74,10 @@ async function crearOrden(orden) {
     try {
         const ordenBD = convertirOrdenParaBD(orden);
         
-        const { data, error } = await supabaseClient
-            .from('ordenes')
-            .insert([ordenBD])
-            .select();
+        const { data, error } = await guardarConReintento(
+            (fila) => supabaseClient.from('ordenes').insert([fila]).select(),
+            ordenBD
+        );
         
         if (error) throw error;
         
@@ -65,11 +97,10 @@ async function actualizarOrden(numeroOrden, orden) {
         // Convertir orden a formato de BD
         const ordenBD = convertirOrdenParaBD(orden);
         
-        const { data, error } = await supabaseClient
-            .from('ordenes')
-            .update(ordenBD)
-            .eq('numero_orden', numeroOrden)
-            .select();
+        const { data, error } = await guardarConReintento(
+            (fila) => supabaseClient.from('ordenes').update(fila).eq('numero_orden', numeroOrden).select(),
+            ordenBD
+        );
         
         if (error) throw error;
         
@@ -335,6 +366,13 @@ function convertirOrdenParaBD(orden) {
         talla_dama_xl: (orden.tallas && orden.tallas['DA-XL']) || 0,
         talla_dama_2xl: (orden.tallas && orden.tallas['DA-2XL']) || 0,
 
+        // Tallas Niño (pantaloneta, pijama, sudadera, chaqueta, pantalón, top)
+        tallas_nino: Object.fromEntries(
+            Object.entries(orden.tallas || {})
+                .filter(([clave, cantidad]) => esTallaNino(clave) && (parseInt(cantidad) || 0) > 0)
+                .map(([clave, cantidad]) => [clave, parseInt(cantidad) || 0])
+        ),
+
         imagen_manga_derecha:   orden.imagenMangaDerecha   || null,
         imagen_manga_izquierda: orden.imagenMangaIzquierda || null,
         imagen_frente:          orden.imagenFrente          || null,
@@ -475,6 +513,13 @@ function convertirOrdenDesdeBD(ordenBD) {
             'DA-L': ordenBD.talla_dama_l || 0,
             'DA-XL': ordenBD.talla_dama_xl || 0,
             'DA-2XL': ordenBD.talla_dama_2xl || 0,
+
+            // Niño (pantaloneta, pijama, sudadera, chaqueta, pantalón, top)
+            ...Object.fromEntries(
+                Object.entries(ordenBD.tallas_nino || {})
+                    .filter(([clave]) => esTallaNino(clave))
+                    .map(([clave, cantidad]) => [clave, parseInt(cantidad) || 0])
+            ),
         },
 
         

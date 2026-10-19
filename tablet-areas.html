@@ -1141,7 +1141,14 @@
                 { claves:[['PT-S','S'],['PT-M','M'],['PT-L','L'],['PT-XL','XL']], titulo:'Tallas Pantalonetas', color:'#FF9800' },
                 { claves:[['PJ-S','S'],['PJ-M','M'],['PJ-L','L'],['PJ-XL','XL']], titulo:'Tallas Pijamas', color:'#9C27B0' },
                 { claves:[['SD-S','S'],['SD-M','M'],['SD-L','L'],['SD-XL','XL']], titulo:'Tallas Sudaderas/Joggers', color:'#607D8B' },
-                { claves:[['CH-XS','XS'],['CH-S','S'],['CH-M','M'],['CH-L','L'],['CH-XL','XL'],['CH-2XL','2XL'],['CH-3XL','3XL']], titulo:'Tallas Chaquetas', color:'#795548' }
+                { claves:[['CH-XS','XS'],['CH-S','S'],['CH-M','M'],['CH-L','L'],['CH-XL','XL'],['CH-2XL','2XL'],['CH-3XL','3XL']], titulo:'Tallas Chaquetas', color:'#795548' },
+                // Tallas de niño 4 a 16
+                ...[['PTN','Tallas Pantalonetas Niño','#FF9800'],['PJN','Tallas Pijamas Niño','#9C27B0'],
+                    ['SDN','Tallas Sudaderas/Joggers Niño','#607D8B'],['CHN','Tallas Chaquetas Niño','#795548'],
+                    ['PN','Tallas Pantalón Niño','#2E7D32'],['TPN','Tallas Top Niña','#E91E63']
+                ].map(([g, titulo, color]) => ({
+                    claves: ['4','6','8','10','12','14','16'].map(t => [`${g}-${t}`, t]), titulo, color
+                }))
             ];
 
             gruposExtra.forEach(grupo => {

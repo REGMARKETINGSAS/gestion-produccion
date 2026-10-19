@@ -518,6 +518,10 @@ function convertirOrdenDesdeBD(ordenBD) {
             'DA-2XL': ordenBD.talla_dama_2xl || 0,
 
             // Niño (pantaloneta, pijama, sudadera, chaqueta, pantalón, top)
+            // (también lee la columna tallas_nino si existe, por compatibilidad)
+            ...Object.fromEntries(Object.entries(ordenBD.tallas_nino || {})
+                .filter(([clave]) => esTallaNino(clave))
+                .map(([clave, cantidad]) => [clave, parseInt(cantidad) || 0])),
             ...tallasNino,
         },
 

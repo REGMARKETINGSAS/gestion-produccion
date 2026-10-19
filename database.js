@@ -12,34 +12,41 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==========================================
 // TALLAS DE NIÑO (4 a 16)
-// Se guardan en la columna JSONB "tallas_nino" de la tabla ordenes.
+// Se guardan dentro de la columna "requerimientos" (que ya existe en Supabase)
+// bajo la clave oculta "_tallasNino". Al leer la orden se separan otra vez,
+// así el resto de la app ve "requerimientos" igual que siempre.
 // Prefijos: PTN = Pantaloneta, PJN = Pijama, SDN = Sudadera/Jogger,
 //           CHN = Chaqueta, PN = Pantalón/Jeans, TPN = Top niña
 // ==========================================
 const PREFIJOS_TALLAS_NINO = ['PTN', 'PJN', 'SDN', 'CHN', 'PN', 'TPN'];
+const CLAVE_TALLAS_NINO = '_tallasNino';
 
 function esTallaNino(clave) {
     return PREFIJOS_TALLAS_NINO.some(p => clave.startsWith(p + '-'));
 }
 
-// Si la columna tallas_nino aún no existe en Supabase, se reintenta sin ella
-// para que la app siga funcionando como antes.
-function errorPorColumnaTallasNino(error) {
-    return error && /tallas_nino/.test(error.message || '');
+// Junta los requerimientos normales con las tallas de niño (solo las que tienen cantidad)
+function requerimientosParaBD(orden) {
+    const req = { ...(orden.requerimientos || {}) };
+    delete req[CLAVE_TALLAS_NINO];
+    const nino = {};
+    Object.entries(orden.tallas || {}).forEach(([clave, cantidad]) => {
+        const n = parseInt(cantidad) || 0;
+        if (esTallaNino(clave) && n > 0) nino[clave] = n;
+    });
+    if (Object.keys(nino).length > 0) req[CLAVE_TALLAS_NINO] = nino;
+    return req;
 }
 
-async function guardarConReintento(operacion, ordenBD) {
-    let resultado = await operacion(ordenBD);
-    if (errorPorColumnaTallasNino(resultado.error)) {
-        console.warn('⚠️ Falta la columna tallas_nino en Supabase. Guardando sin tallas de niño.');
-        const tieneNino = Object.values(ordenBD.tallas_nino || {}).some(v => v > 0);
-        if (tieneNino) {
-            alert('⚠️ Las tallas de NIÑO no se pudieron guardar: falta actualizar la base de datos (columna tallas_nino). El resto de la orden sí se guardó.');
-        }
-        const { tallas_nino, ...sinNino } = ordenBD;
-        resultado = await operacion(sinNino);
-    }
-    return resultado;
+// Separa las tallas de niño de los requerimientos al leer de la BD
+function separarTallasNino(requerimientosBD) {
+    const req = { ...(requerimientosBD || {}) };
+    const nino = {};
+    Object.entries(req[CLAVE_TALLAS_NINO] || {}).forEach(([clave, cantidad]) => {
+        if (esTallaNino(clave)) nino[clave] = parseInt(cantidad) || 0;
+    });
+    delete req[CLAVE_TALLAS_NINO];
+    return { requerimientos: req, tallasNino: nino };
 }
 
 // ==========================================
@@ -74,10 +81,10 @@ async function crearOrden(orden) {
     try {
         const ordenBD = convertirOrdenParaBD(orden);
         
-        const { data, error } = await guardarConReintento(
-            (fila) => supabaseClient.from('ordenes').insert([fila]).select(),
-            ordenBD
-        );
+        const { data, error } = await supabaseClient
+            .from('ordenes')
+            .insert([ordenBD])
+            .select();
         
         if (error) throw error;
         
@@ -97,10 +104,11 @@ async function actualizarOrden(numeroOrden, orden) {
         // Convertir orden a formato de BD
         const ordenBD = convertirOrdenParaBD(orden);
         
-        const { data, error } = await guardarConReintento(
-            (fila) => supabaseClient.from('ordenes').update(fila).eq('numero_orden', numeroOrden).select(),
-            ordenBD
-        );
+        const { data, error } = await supabaseClient
+            .from('ordenes')
+            .update(ordenBD)
+            .eq('numero_orden', numeroOrden)
+            .select();
         
         if (error) throw error;
         
@@ -277,7 +285,7 @@ function convertirOrdenParaBD(orden) {
         molde: orden.molde,
         ancho_bies: orden.anchoBies,
         dobladillo: orden.dobladillo,
-        requerimientos: orden.requerimientos,
+        requerimientos: requerimientosParaBD(orden), // incluye tallas de niño
         observaciones: orden.observaciones,
         imagen_diseno: orden.imagenDiseno,
         cantidad_total: orden.cantidadTotal || 0,
@@ -366,12 +374,6 @@ function convertirOrdenParaBD(orden) {
         talla_dama_xl: (orden.tallas && orden.tallas['DA-XL']) || 0,
         talla_dama_2xl: (orden.tallas && orden.tallas['DA-2XL']) || 0,
 
-        // Tallas Niño (pantaloneta, pijama, sudadera, chaqueta, pantalón, top)
-        tallas_nino: Object.fromEntries(
-            Object.entries(orden.tallas || {})
-                .filter(([clave, cantidad]) => esTallaNino(clave) && (parseInt(cantidad) || 0) > 0)
-                .map(([clave, cantidad]) => [clave, parseInt(cantidad) || 0])
-        ),
 
         imagen_manga_derecha:   orden.imagenMangaDerecha   || null,
         imagen_manga_izquierda: orden.imagenMangaIzquierda || null,
@@ -406,6 +408,7 @@ function convertirOrdenParaBD(orden) {
  * Convertir orden del formato de BD al formato del sistema
  */
 function convertirOrdenDesdeBD(ordenBD) {
+    const { requerimientos, tallasNino } = separarTallasNino(ordenBD.requerimientos);
     return {
         numeroOrden: ordenBD.numero_orden,
         cliente: ordenBD.cliente,
@@ -423,7 +426,7 @@ function convertirOrdenDesdeBD(ordenBD) {
         molde: ordenBD.molde,
         anchoBies: ordenBD.ancho_bies,
         dobladillo: ordenBD.dobladillo,
-        requerimientos: ordenBD.requerimientos,
+        requerimientos: requerimientos,
         observaciones: ordenBD.observaciones,
         imagenDiseno: ordenBD.imagen_diseno,
         imagenMangaDerecha:   ordenBD.imagen_manga_derecha   || null,
@@ -515,11 +518,7 @@ function convertirOrdenDesdeBD(ordenBD) {
             'DA-2XL': ordenBD.talla_dama_2xl || 0,
 
             // Niño (pantaloneta, pijama, sudadera, chaqueta, pantalón, top)
-            ...Object.fromEntries(
-                Object.entries(ordenBD.tallas_nino || {})
-                    .filter(([clave]) => esTallaNino(clave))
-                    .map(([clave, cantidad]) => [clave, parseInt(cantidad) || 0])
-            ),
+            ...tallasNino,
         },
 
         

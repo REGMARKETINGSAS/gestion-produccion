@@ -75,6 +75,105 @@ async function obtenerOrdenes() {
 }
 
 /**
+ * Igual que obtenerOrdenes, pero devuelve null si falla la conexión (en vez de una lista vacía),
+ * para que las pantallas puedan distinguir "no hay órdenes" de "no hay internet".
+ */
+async function obtenerOrdenesONull() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('ordenes')
+            .select('*')
+            .eq('estado_general', 'activa')
+            .order('fecha_creacion', { ascending: false });
+        if (error) throw error;
+        return data.map(convertirOrdenDesdeBD);
+    } catch (error) {
+        console.error('Error al obtener órdenes:', error);
+        return null;
+    }
+}
+
+/**
+ * Trae una sola orden (activa o completada) directamente de la base, sin depender del navegador.
+ */
+async function obtenerOrden(numeroOrden) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('ordenes')
+            .select('*')
+            .eq('numero_orden', numeroOrden)
+            .limit(1);
+        if (error) throw error;
+        return data && data.length ? convertirOrdenDesdeBD(data[0]) : null;
+    } catch (error) {
+        console.error('Error al obtener la orden:', error);
+        return undefined; // undefined = no se pudo consultar; null = no existe
+    }
+}
+
+// Columnas de estado y progreso de cada área (las mismas que ya usa la base)
+const COLUMNA_ESTADO = { corteLaser: 'estado_corte_laser', dtf: 'estado_dtf', estampado: 'estado_estampado' };
+const COLUMNA_PROGRESO = { corteLaser: 'progreso_corte_laser', dtf: 'progreso_dtf', estampado: 'progreso_estampado' };
+const colEstado = (area) => COLUMNA_ESTADO[area] || `estado_${area}`;
+const colProgreso = (area) => COLUMNA_PROGRESO[area] || `progreso_${area}`;
+
+/**
+ * Suma unidades al progreso de un área. Lee el progreso MÁS RECIENTE de la base justo antes de guardar,
+ * así dos tablets que registran avance al tiempo no se borran el trabajo entre sí.
+ * incrementos: { 'M': 5, 'L': 2 }  o  { total: 10 }  para productos sin tallas.
+ * Si el área estaba pendiente, la pasa a "en-proceso" en la misma escritura.
+ * topes (opcional): { 'M': 20 } para que el avance nunca pase de lo pedido.
+ */
+async function registrarAvance(numeroOrden, area, incrementos, topes = {}) {
+    try {
+        const cp = colProgreso(area), ce = colEstado(area);
+        const { data, error } = await supabaseClient
+            .from('ordenes')
+            .select(`${cp},${ce}`)
+            .eq('numero_orden', numeroOrden)
+            .limit(1);
+        if (error) throw error;
+        if (!data || !data.length) throw new Error('La orden ya no existe');
+        const progreso = { ...(data[0][cp] || {}) };
+        Object.entries(incrementos).forEach(([clave, n]) => {
+            let nuevo = (parseInt(progreso[clave]) || 0) + (parseInt(n) || 0);
+            if (topes[clave] !== undefined) nuevo = Math.min(nuevo, topes[clave]);
+            progreso[clave] = Math.max(0, nuevo);
+        });
+        const cambios = { [cp]: progreso };
+        const estadoActual = data[0][ce];
+        if (!estadoActual || estadoActual === 'pendiente') cambios[ce] = 'en-proceso';
+        const { error: errorUpdate } = await supabaseClient
+            .from('ordenes')
+            .update(cambios)
+            .eq('numero_orden', numeroOrden);
+        if (errorUpdate) throw errorUpdate;
+        return { success: true, progreso, estado: cambios[ce] || estadoActual };
+    } catch (error) {
+        console.error('❌ Error al registrar avance:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Marca un área como completada y guarda su progreso en UNA sola escritura
+ * (antes eran dos y, si fallaba una, la orden quedaba a medias).
+ */
+async function completarArea(numeroOrden, area, progreso) {
+    try {
+        const { error } = await supabaseClient
+            .from('ordenes')
+            .update({ [colEstado(area)]: 'completado', [colProgreso(area)]: progreso })
+            .eq('numero_orden', numeroOrden);
+        if (error) throw error;
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error al completar el área:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Crear nueva orden
  */
 async function crearOrden(orden) {
@@ -202,10 +301,15 @@ async function eliminarOrden(numeroOrden) {
  */
 async function moverAHistorial(orden) {
     try {
-        // 1. Guardar en historial
-        const totalPrendas = Object.values(orden.tallas).reduce((sum, val) => sum + val, 0);
-        
-        const { error: errorHistorial } = await supabaseClient
+        // 1. Guardar en historial (si un intento anterior ya lo guardó, no se duplica)
+        const totalPrendas = Object.values(orden.tallas || {}).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+        const { data: yaEsta } = await supabaseClient
+            .from('historial_ordenes')
+            .select('id')
+            .eq('numero_orden', orden.numeroOrden)
+            .limit(1);
+
+        const { error: errorHistorial } = yaEsta && yaEsta.length ? { error: null } : await supabaseClient
             .from('historial_ordenes')
             .insert([{
                 numero_orden: orden.numeroOrden,
@@ -620,20 +724,30 @@ window.addEventListener('load', async () => {
         console.log('🌐 Sistema conectado a Supabase');
         await sincronizarConSupabase();
     } else {
-        console.warn('⚠️ Modo offline - usando localStorage');
-        const banner = document.createElement('div');
-        banner.style.cssText = `
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: linear-gradient(135deg, #E65100, #F57C00);
-            color: white; text-align: center;
-            padding: 12px 20px; font-family: 'Outfit', sans-serif;
-            font-weight: 600; font-size: 0.92rem;
-            z-index: 99999; box-shadow: 0 -4px 16px rgba(0,0,0,0.2);
-        `;
-        banner.innerHTML = '⚠️ Sin conexión a internet — Los cambios se guardarán localmente';
-        document.body.appendChild(banner);
+        console.warn('⚠️ Sin conexión con Supabase');
+        mostrarAvisoSinConexion(true);
     }
 });
+// Aviso fijo cuando no hay conexión. Ya no promete "guardar localmente": sin internet
+// los cambios NO llegan a la base, así que se avisa claramente para no perder trabajo.
+function mostrarAvisoSinConexion(mostrar) {
+    let aviso = document.getElementById('avisoSinConexion');
+    if (!mostrar) { if (aviso) aviso.remove(); return; }
+    if (aviso) return;
+    aviso = document.createElement('div');
+    aviso.id = 'avisoSinConexion';
+    aviso.setAttribute('role', 'alert');
+    aviso.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;' +
+        'background:#B71C1C;color:#fff;padding:12px 18px;border-radius:12px;font:600 0.92rem Outfit,system-ui,sans-serif;' +
+        'box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px);text-align:center;';
+    aviso.textContent = 'Sin conexión con el servidor. Lo que hagas ahora no se guardará hasta que vuelva internet.';
+    document.body.appendChild(aviso);
+}
+window.addEventListener('offline', () => mostrarAvisoSinConexion(true));
+window.addEventListener('online', async () => {
+    if (await verificarConexion()) mostrarAvisoSinConexion(false);
+});
+
 // ==========================================
 // LIMPIAR HISTORIAL
 // ==========================================
@@ -761,6 +875,10 @@ async function eliminarImagen(url) {
 window.DB = {
     // Órdenes
     obtenerOrdenes,
+    obtenerOrdenesONull,
+    obtenerOrden,
+    registrarAvance,
+    completarArea,
     crearOrden,
     actualizarOrden,
     eliminarOrden,

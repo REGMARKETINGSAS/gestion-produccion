@@ -806,24 +806,30 @@
                 <table class="tallas-table" style="border: 3px solid #311B92; border-top: none; margin-top: 15px;">
                     <thead>
                         <tr>
-                            <th colspan="5" style="background: #4527A0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #311B92;">
+                            <th colspan="8" style="background: #4527A0; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #311B92;">
                                 <i class="fas fa-user-tie"></i> TALLAS CHAQUETAS
                             </th>
                         </tr>
                         <tr>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">XS</th>
                             <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">S</th>
                             <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">M</th>
                             <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">L</th>
                             <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">XL</th>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">2XL</th>
+                            <th style="background: #4527A0; border-right: 2px solid #311B92; border-bottom: 2px solid #311B92;">3XL</th>
                             <th style="background: #4527A0; border-right: none; border-bottom: 2px solid #311B92;">TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHXSVista">0</td>
                             <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHSVista">0</td>
                             <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHMVista">0</td>
                             <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHLVista">0</td>
                             <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCHXLVista">0</td>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCH2XLVista">0</td>
+                            <td style="border-right: 2px solid #B39DDB; border-bottom: none;" id="tallaCH3XLVista">0</td>
                             <td style="background: #EDE7F6 !important; font-weight: bold; font-size: 1.3rem; color: #4527A0 !important; border-right: none; border-bottom: none;" id="totalChaquetasVista">0</td>
                         </tr>
                     </tbody>
@@ -873,6 +879,9 @@
     </div>
 
     <script>
+        if (sessionStorage.getItem('jefeAutenticado') !== 'true' && sessionStorage.getItem('trabajadorAutenticado') !== 'true') {
+            location.replace('index.html');
+        }
         // Obtener parámetro de URL o cargar última orden
         const urlParams = new URLSearchParams(window.location.search);
         const numeroOrden = urlParams.get('orden');
@@ -882,7 +891,11 @@
             let orden;
 
             if (numeroOrden) {
-                orden = ordenes.find(o => o.numeroOrden === numeroOrden);
+                // Primero la base (dato al día); si no hay conexión, la copia del navegador
+                if (window.DB.obtenerOrden && urlParams.get('origen') !== 'historial') {
+                    try { orden = await window.DB.obtenerOrden(numeroOrden); } catch (e) { orden = null; }
+                }
+                if (!orden) orden = ordenes.find(o => o.numeroOrden === numeroOrden);
 
                 // Si no está en activas, buscar en historial Supabase
                 if (!orden) {
@@ -1051,7 +1064,7 @@
                 let tienePM = false;
 
                 tallasPM.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalPM += cantidad;
                     if (cantidad > 0) tienePM = true;
                     const id = 'talla' + talla.replace('-', '') + 'Vista';
@@ -1072,7 +1085,7 @@
                 let tienePH = false;
 
                 tallasPH.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalPH += cantidad;
                     if (cantidad > 0) tienePH = true;
                     const id = 'talla' + talla.replace('-', '') + 'Vista';
@@ -1093,7 +1106,7 @@
                 let tienePT = false;
 
                 tallasPT.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalPT += cantidad;
                     if (cantidad > 0) tienePT = true;
                     const id = 'talla' + talla.replace('-', '') + 'Vista';
@@ -1114,7 +1127,7 @@
                 let tienePJ = false;
 
                 tallasPJ.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalPJ += cantidad;
                     if (cantidad > 0) tienePJ = true;
                     const id = 'talla' + talla.replace('-', '') + 'Vista';
@@ -1135,7 +1148,7 @@
                 let tieneSD = false;
 
                 tallasSD.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalSD += cantidad;
                     if (cantidad > 0) tieneSD = true;
                     const id = 'tallaSD' + talla.split('-')[1] + 'Vista';
@@ -1151,12 +1164,12 @@
                 }
 
                 // Tallas Chaquetas
-                const tallasCH = ['CH-S', 'CH-M', 'CH-L', 'CH-XL'];
+                const tallasCH = ['CH-XS', 'CH-S', 'CH-M', 'CH-L', 'CH-XL', 'CH-2XL', 'CH-3XL'];
                 let totalCH = 0;
                 let tieneCH = false;
 
                 tallasCH.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalCH += cantidad;
                     if (cantidad > 0) tieneCH = true;
                     const id = 'talla' + talla.replace('-', '') + 'Vista';
@@ -1177,7 +1190,7 @@
                 let tieneDA = false;
 
                 tallasDA.forEach(talla => {
-                    const cantidad = orden.tallas[talla] || 0;
+                    const cantidad = (orden.tallas || {})[talla] || 0;
                     totalDA += cantidad;
                     if (cantidad > 0) tieneDA = true;
                     const id = 'cant' + talla.replace('-', '_');
@@ -1205,7 +1218,7 @@
                 let tieneNino = false;
                 let htmlNino = '';
                 gruposNino.forEach(([g, titulo, color, borde, fondo]) => {
-                    const cantidades = tallasNinoLista.map(t => parseInt(orden.tallas[`${g}-${t}`]) || 0);
+                    const cantidades = tallasNinoLista.map(t => parseInt((orden.tallas || {})[`${g}-${t}`]) || 0);
                     const totalGrupo = cantidades.reduce((a, b) => a + b, 0);
                     if (totalGrupo === 0) return;
                     tieneNino = true;
@@ -1336,9 +1349,14 @@
         const origenParam = new URLSearchParams(window.location.search).get('origen');
         const btnVolver = document.getElementById('btnVolver');
 
-        if (origenParam === 'tablet' || origenParam === 'historial') {
-            btnVolver.innerHTML = '<i class="fas fa-times"></i> Cerrar';
-            btnVolver.onclick = () => window.close();
+        // La orden se abre en la misma pestaña (así no se pierde la sesión) y "Volver" regresa a donde estaba
+        const areaParam = new URLSearchParams(window.location.search).get('area');
+        if (origenParam === 'tablet') {
+            btnVolver.innerHTML = '<i class="fas fa-arrow-left"></i> Volver al área';
+            btnVolver.onclick = () => window.location.href = 'tablet-areas.html' + (areaParam ? '?area=' + encodeURIComponent(areaParam) : '');
+        } else if (origenParam === 'historial') {
+            btnVolver.innerHTML = '<i class="fas fa-arrow-left"></i> Volver al historial';
+            btnVolver.onclick = () => window.location.href = 'dashboard-jefe.html#historial';
         } else if (window.history.length <= 1) {
             btnVolver.innerHTML = '<i class="fas fa-tv"></i> Dashboard';
             btnVolver.onclick = () => window.location.href = 'dashboard-jefe.html';
@@ -1346,8 +1364,13 @@
             btnVolver.onclick = () => history.back();
         }
 
-        // Cargar al iniciar
-        cargarOrden();
+        // Cargar al iniciar. Con ?pdf=1 (botón "PDF" del panel o al crear la orden) descarga el PDF de una vez.
+        cargarOrden().then(async () => {
+            if (urlParams.get('pdf') !== '1' || !document.getElementById('infoCliente').textContent.trim()) return;
+            await document.fonts.ready.catch(() => {});
+            await Promise.all([...document.querySelectorAll('.orden-documento img')].map((img) => img.complete ? null : new Promise((ok) => { img.onload = img.onerror = ok; setTimeout(ok, 8000); })));
+            setTimeout(descargarPDF, 300);
+        });
     </script>
 </body>
 

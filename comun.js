@@ -14,11 +14,14 @@
         dtf:         { nombre: 'DTF',          largo: 'Área DTF',             icono: 'layer-group',   sub: 'Transfer directo',      color: '#00838F', campos: ['arte', 'tipoPrenda'] },
         estampado:   { nombre: 'Estampado',    largo: 'Área de Estampado',    icono: 'stamp',         sub: 'Serigrafía',            color: '#AD1457', campos: ['arte', 'tipoPrenda'] },
         corteLaser:  { nombre: 'Corte Láser',  largo: 'Área Corte Láser',     icono: 'crosshairs',    sub: 'Corte de precisión',    color: '#4527A0', campos: ['tipoPrenda', 'molde', 'ancho'] },
+        controlCalidad: { nombre: 'Control de Calidad', largo: 'Área de Control de Calidad', icono: 'clipboard-check', sub: 'Revisión antes de despacho', color: '#827717', campos: ['tipoPrenda', 'arte', 'marquilla'] },
         despacho:    { nombre: 'Despacho',     largo: 'Área de Despacho',     icono: 'shipping-fast', sub: 'Empaque y envío',       color: '#37474F', campos: ['cliente', 'fechaEntrega', 'marquilla', 'tipoPrenda'] },
     };
     // Orden en que la prenda pasa por la planta. Bordado se pide pero no se sigue por área (como siempre).
-    const ORDEN_AREAS = ['corte', 'impresion', 'sublimacion', 'dtf', 'estampado', 'corteLaser', 'confeccion', 'despacho'];
+    const ORDEN_AREAS = ['corte', 'impresion', 'sublimacion', 'dtf', 'estampado', 'corteLaser', 'confeccion', 'controlCalidad', 'despacho'];
     const REQUERIMIENTOS = [...ORDEN_AREAS, 'bordado'];
+    // Nombre de la columna de progreso de cada área en la orden (igual a la de la base).
+    const claveProgreso = (a) => ({ corteLaser: 'progreso_corte_laser', controlCalidad: 'progreso_control_calidad' }[a] || `progreso_${a}`);
     const NOMBRE_REQ = { ...Object.fromEntries(Object.entries(AREAS).map(([k, v]) => [k, v.nombre])), bordado: 'Bordado' };
 
     // ---------- Tallas ----------
@@ -70,6 +73,9 @@
         'Chaqueta':           P('chaquetas', ['tela', 'molde', 'marquilla']),
         'Buzo':               P('infantil-adulto', TODO),
         'Top':                P('solo-dama', TODO),
+        'Uniforme':           P('infantil-caballero-dama', TODO),
+        'Peto':               P('infantil-adulto', ['tela', 'molde', 'ancho', 'marquilla']),
+        'Chaleco':            P('infantil-caballero-dama', ['tela', 'molde', 'marquilla']),
         'Pantaloneta':        P('pantalonetas', ['tela', 'molde', 'marquilla']),
         'Jeans':              P('pantalon-mujer-hombre', ['tela', 'molde', 'marquilla']),
         'Pantalón':           P('pantalon-mujer-hombre', ['tela', 'molde', 'marquilla']),
@@ -87,11 +93,15 @@
         'Bandera':            P('cantidad', ['tela', 'ancho']),
         'Gorro de Cocina':    P('cantidad', ['tela']),
         'Mug':                P('cantidad', []),
+        'Pañoleta':           P('cantidad', ['tela', 'ancho']),
+        'Cartuchera':         P('cantidad', ['tela']),
+        'Cinta':              P('cantidad', ['tela', 'ancho']),
+        'Manilla':            P('cantidad', ['tela', 'ancho']),
     };
     const MENU_PRENDAS = [
-        ['Prendas con tallas', ['Camiseta', 'Camiseta Polo', 'Blusa', 'Camisa Manga Corta', 'Camisa Manga Larga', 'Pijama', 'Chaqueta', 'Buzo', 'Top']],
+        ['Prendas con tallas', ['Camiseta', 'Camiseta Polo', 'Blusa', 'Camisa Manga Corta', 'Camisa Manga Larga', 'Pijama', 'Chaqueta', 'Buzo', 'Top', 'Uniforme', 'Peto', 'Chaleco']],
         ['Pantalones', ['Pantaloneta', 'Jeans', 'Sudadera', 'Jogger']],
-        ['Accesorios (cantidad)', ['Totebag', 'Tula', 'Mochila', 'Gorra', 'Toalla', 'Manga', 'Delantal', 'Capa de Barberia', 'Visera', 'Bandera', 'Gorro de Cocina', 'Mug']],
+        ['Accesorios (cantidad)', ['Totebag', 'Tula', 'Mochila', 'Gorra', 'Toalla', 'Manga', 'Delantal', 'Capa de Barberia', 'Visera', 'Bandera', 'Gorro de Cocina', 'Mug', 'Pañoleta', 'Cartuchera', 'Cinta', 'Manilla']],
     ];
     const NOMBRE_PRENDA = { 'Camiseta Polo': 'Camiseta tipo polo', 'Capa de Barberia': 'Capa de barbería' };
 
@@ -337,7 +347,7 @@
     setTimeout(burbujas, 300);
 
     window.REG = {
-        AREAS, ORDEN_AREAS, REQUERIMIENTOS, NOMBRE_REQ, GRUPOS_TALLAS, TIPOS_TALLAS, TODAS_LAS_TALLAS, NINO,
+        AREAS, ORDEN_AREAS, claveProgreso, REQUERIMIENTOS, NOMBRE_REQ, GRUPOS_TALLAS, TIPOS_TALLAS, TODAS_LAS_TALLAS, NINO,
         PRENDAS, MENU_PRENDAS, NOMBRE_PRENDA, OPCIONES, ETIQUETA_CAMPO,
         esc, hoyISO, diasPara, urgencia, fechaCorta, fechaLarga, totalOrden, areasDe, estadoArea, resumenOrden, gruposConCantidad, valorCampo,
         exigirSesion, cerrarSesion, aviso, confirmar, verImagen, prepararImagen, encabezado,

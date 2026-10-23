@@ -112,8 +112,8 @@ async function obtenerOrden(numeroOrden) {
 }
 
 // Columnas de estado y progreso de cada área (las mismas que ya usa la base)
-const COLUMNA_ESTADO = { corteLaser: 'estado_corte_laser', dtf: 'estado_dtf', estampado: 'estado_estampado' };
-const COLUMNA_PROGRESO = { corteLaser: 'progreso_corte_laser', dtf: 'progreso_dtf', estampado: 'progreso_estampado' };
+const COLUMNA_ESTADO = { corteLaser: 'estado_corte_laser', controlCalidad: 'estado_control_calidad', dtf: 'estado_dtf', estampado: 'estado_estampado' };
+const COLUMNA_PROGRESO = { corteLaser: 'progreso_corte_laser', controlCalidad: 'progreso_control_calidad', dtf: 'progreso_dtf', estampado: 'progreso_estampado' };
 const colEstado = (area) => COLUMNA_ESTADO[area] || `estado_${area}`;
 const colProgreso = (area) => COLUMNA_PROGRESO[area] || `progreso_${area}`;
 
@@ -227,6 +227,7 @@ async function actualizarEstadoArea(numeroOrden, area, nuevoEstado) {
     try {
         const mapaColumnas = {
             'corteLaser': 'estado_corte_laser',
+            'controlCalidad': 'estado_control_calidad',
             'dtf': 'estado_dtf',
             'estampado': 'estado_estampado'
         };
@@ -255,6 +256,7 @@ async function actualizarProgresoArea(numeroOrden, area, progreso) {
     try {
         const mapaColumnas = {
             'corteLaser': 'progreso_corte_laser',
+            'controlCalidad': 'progreso_control_calidad',
             'dtf': 'progreso_dtf',
             'estampado': 'progreso_estampado'
         };
@@ -502,9 +504,13 @@ function convertirOrdenParaBD(orden) {
         progreso_dtf: orden.progreso_dtf || {},
         progreso_estampado: orden.progreso_estampado || {},
         progreso_corte_laser: orden.progreso_corte_laser || {},
-        paquete_id: orden.paqueteId || null
-
-
+        paquete_id: orden.paqueteId || null,
+        // Control de calidad solo se envía si la orden lo lleva, así las demás órdenes
+        // se siguen guardando aunque todavía no se haya corrido AGREGAR-CONTROL-CALIDAD.sql
+        ...(orden.requerimientos?.controlCalidad ? {
+            estado_control_calidad: orden.estado?.controlCalidad || 'pendiente',
+            progreso_control_calidad: orden.progreso_control_calidad || {},
+        } : {}),
     };
 }
 
@@ -640,7 +646,8 @@ function convertirOrdenDesdeBD(ordenBD) {
             despacho: ordenBD.estado_despacho,
             dtf: ordenBD.estado_dtf,
             estampado: ordenBD.estado_estampado,
-            corteLaser: ordenBD.estado_corte_laser
+            corteLaser: ordenBD.estado_corte_laser,
+            controlCalidad: ordenBD.estado_control_calidad
         },
 
         progreso_corte: ordenBD.progreso_corte || {},
@@ -651,6 +658,7 @@ function convertirOrdenDesdeBD(ordenBD) {
         progreso_dtf: ordenBD.progreso_dtf || {},
         progreso_estampado: ordenBD.progreso_estampado || {},
         progreso_corte_laser: ordenBD.progreso_corte_laser || {},
+        progreso_control_calidad: ordenBD.progreso_control_calidad || {},
         paqueteId: ordenBD.paquete_id || null
     };
 }

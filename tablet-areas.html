@@ -286,7 +286,7 @@
         }
 
         function avance(o, enProceso) {
-            const progreso = o[`progreso_${area}`] || {};
+            const progreso = o[REG.claveProgreso(area)] || {};
             const n = esc(o.numeroOrden);
             if (o.cantidadTotal) {
                 const hechas = Math.min(parseInt(progreso.total) || 0, o.cantidadTotal);
@@ -394,7 +394,7 @@
             await conBoton(boton, '', async () => {
                 const r = await window.DB.registrarAvance(n, area, { [clave]: cantidad }, { [clave]: tope });
                 if (!r.success) return REG.aviso('No se guardó el avance. Revisa el internet e intenta de nuevo.', 'error', 5000);
-                o[`progreso_${area}`] = r.progreso;
+                o[REG.claveProgreso(area)] = r.progreso;
                 o.estado = { ...o.estado, [area]: r.estado || 'en-proceso' };
                 guardarLocal();
                 const etiqueta = clave === 'total' ? 'unidades' : `talla ${REG.GRUPOS_TALLAS && clave.includes('-') ? clave.split('-').pop() : clave}`;
@@ -410,14 +410,14 @@
                 si: 'Sí, terminar', icono: 'check-double',
             });
             if (!ok) return;
-            const progreso = { ...(o[`progreso_${area}`] || {}) };
+            const progreso = { ...(o[REG.claveProgreso(area)] || {}) };
             if (o.cantidadTotal) progreso.total = o.cantidadTotal;
             else Object.entries(o.tallas || {}).forEach(([t, c]) => { if (c > 0) progreso[t] = c; });
             await conBoton(boton, 'Guardando…', async () => {
                 const r = await window.DB.completarArea(n, area, progreso);
                 if (!r.success) return REG.aviso('No se pudo terminar. Revisa el internet e intenta de nuevo.', 'error', 5000);
                 o.estado = { ...o.estado, [area]: 'completado' };
-                o[`progreso_${area}`] = progreso;
+                o[REG.claveProgreso(area)] = progreso;
                 guardarLocal();
                 REG.aviso(`Orden ${n} terminada en ${AREAS[area].nombre}`, 'ok');
             });

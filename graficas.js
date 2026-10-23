@@ -8,7 +8,7 @@
     const C = { pendiente: '#B0BEC5', proceso: '#F59E0B', lista: '#43A047', vencida: '#D32F2F', azul: '#1565C0', celeste: '#4FC3F7', suave: '#E3F0FD' };
     const fmt = (n) => Number(n || 0).toLocaleString('es-CO');
 
-    const colProgreso = (a) => (a === 'corteLaser' ? 'progreso_corte_laser' : `progreso_${a}`);
+    const colProgreso = REG.claveProgreso;
     // Fracción terminada de una orden en un área (0 a 1)
     function avanceArea(o, a) {
         if (estadoArea(o, a) === 'completado') return 1;

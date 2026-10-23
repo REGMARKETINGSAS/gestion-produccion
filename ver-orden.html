@@ -411,6 +411,10 @@
                             <input type="checkbox" id="reqBordado" disabled style="width: 18px; height: 18px;">
                             <span>Bordado</span>
                         </label>
+                        <label style="display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="reqControlCalidad" disabled style="width: 18px; height: 18px;">
+                            <span>Control de Calidad</span>
+                        </label>
                     </div>
                 </div>
 
@@ -992,6 +996,9 @@
                 }
                 if (document.getElementById('reqCorteLaser')) {
                     document.getElementById('reqCorteLaser').checked = orden.requerimientos.corteLaser || false;
+                }
+                if (document.getElementById('reqControlCalidad')) {
+                    document.getElementById('reqControlCalidad').checked = orden.requerimientos.controlCalidad || false;
                 }
                 if (document.getElementById('reqBordado')) {
                     document.getElementById('reqBordado').checked = orden.requerimientos.bordado || false;

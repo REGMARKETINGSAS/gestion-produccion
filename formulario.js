@@ -194,7 +194,7 @@
             });
         }
 
-        enlazarSubida($('diseno'), 'diseno', carpeta === 'disenos' ? 'disenos' : carpeta, 1200);
+        enlazarSubida($('diseno'), 'diseno', carpeta === 'disenos' ? 'disenos' : carpeta, 2200);
         ['mangaDerecha', 'mangaIzquierda', 'frente', 'espalda'].forEach((k) => enlazarSubida($(k), k, 'logos', 800));
 
         function agregarAdicional(url = null) {

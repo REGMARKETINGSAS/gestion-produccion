@@ -148,10 +148,9 @@
             background: #FAFCFF;
         }
         .diseno-imagen {
-            width: 80%;
-            max-height: 480px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            width: 100%;
+            max-height: 760px;
+            border-radius: 8px;
             object-fit: contain;
         }
 
@@ -1326,6 +1325,20 @@
                         el.style.transition = 'none';
                         el.style.opacity = '1';
                     });
+                    // El diseño crece hasta llenar el espacio libre de la hoja carta, sin deformarse:
+                    // la orden completa debe caber en la proporción de una hoja A4 (1200 px de ancho = 1697 px de alto).
+                    const disenoClon = docClone.querySelector('.diseno-imagen');
+                    if (clon && disenoClon) {
+                        const seccion = disenoClon.closest('.diseno-section');
+                        if (seccion) { seccion.style.minHeight = '0'; seccion.style.padding = '6px'; }
+                        disenoClon.style.width = '100%';
+                        disenoClon.style.borderRadius = '0';
+                        disenoClon.style.boxShadow = 'none';
+                        disenoClon.style.maxHeight = 'none';
+                        disenoClon.style.height = '200px';
+                        const libre = Math.round(1200 * 297 / 210) - clon.scrollHeight;
+                        disenoClon.style.height = Math.max(200, 200 + libre) + 'px';
+                    }
                 }
             }).then(canvas => {
                 gradientes.forEach((el, i) => {
@@ -1348,7 +1361,8 @@
                 }
 
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                doc.addImage(imgData, 'JPEG', 0, 0, paginaAncho, paginaAlto);
+                // Centrada y sin estirar, para que la imagen del diseño no salga deformada
+                doc.addImage(imgData, 'JPEG', (paginaAncho - finalAncho) / 2, 0, finalAncho, finalAlto);
                 doc.save('Orden_' + (document.getElementById('infoNumeroOrden')?.textContent || 'produccion') + '.pdf');
             });
         }

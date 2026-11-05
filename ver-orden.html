@@ -722,7 +722,7 @@
                 <table class="tallas-table" style="border: 3px solid #E65100; border-top: none; margin-top: 15px;">
                     <thead>
                         <tr>
-                            <th colspan="5" style="background: #FF9800; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #E65100;">
+                            <th colspan="6" style="background: #FF9800; padding: 12px; font-size: 1.1rem; color: white; border-bottom: 3px solid #E65100;">
                                 <i class="fas fa-running"></i> TALLAS PANTALONETAS
                             </th>
                         </tr>
@@ -731,6 +731,7 @@
                             <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">M</th>
                             <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">L</th>
                             <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">XL</th>
+                            <th style="background: #FF9800; border-right: 2px solid #E65100; border-bottom: 2px solid #E65100;">2XL</th>
                             <th style="background: #FF9800; border-right: none; border-bottom: 2px solid #E65100;">TOTAL</th>
                         </tr>
                     </thead>
@@ -740,6 +741,7 @@
                             <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTMVista">0</td>
                             <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTLVista">0</td>
                             <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPTXLVista">0</td>
+                            <td style="border-right: 2px solid #FFE0B2; border-bottom: none;" id="tallaPT2XLVista">0</td>
                             <td style="background: #FFF3E0 !important; font-weight: bold; font-size: 1.3rem; color: #E65100 !important; border-right: none; border-bottom: none;" id="totalPantalonetasVista">0</td>
                         </tr>
                     </tbody>
@@ -1107,7 +1109,7 @@
                 }
 
                 // Tallas Pantalonetas
-                const tallasPT = ['PT-S', 'PT-M', 'PT-L', 'PT-XL'];
+                const tallasPT = ['PT-S', 'PT-M', 'PT-L', 'PT-XL', 'PT-2XL'];
                 let totalPT = 0;
                 let tienePT = false;
 

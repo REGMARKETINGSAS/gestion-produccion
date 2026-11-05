@@ -121,9 +121,44 @@
             .total-av { grid-template-columns: 1fr; text-align: center; }
             .total-av .controles { justify-content: center; }
         }
+        /* Alarma de orden nueva y avisos del jefe */
+        .alarma {
+            position: fixed; left: 50%; top: 16px; z-index: 1000;
+            transform: translateX(-50%);
+            width: min(620px, calc(100% - 24px));
+            max-height: calc(100vh - 32px); overflow: auto;
+            background: #fff; border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(13, 71, 161, .35), 0 0 0 4px #FFB300;
+            padding: 18px 18px 16px;
+            animation: alarma-entra .35s ease-out;
+        }
+        .alarma.oculto { display: none; }
+        .alarma__cab { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .alarma__cab i { font-size: 1.7rem; color: #FF8F00; animation: campana 1s ease-in-out infinite; }
+        .alarma__cab b { font-size: 1.3rem; color: #0D47A1; }
+        .alarma__lista { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+        .alarma__lista li { background: #FFF8E1; border-radius: 12px; padding: 12px; font-size: 1.02rem; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+        .alarma__lista li.sin-foto { grid-template-columns: 1fr; }
+        .alarma__lista li b { color: #0D47A1; }
+        .alarma__lista img { width: 96px; height: 96px; object-fit: contain; background: #fff; border-radius: 10px; cursor: zoom-in; }
+        .alarma__lista li.aviso { background: #E3F2FD; grid-template-columns: 1fr; }
+        .alarma__lista li.aviso p { margin: 0; font-size: 1.15rem; white-space: pre-wrap; color: #0D2A4F; }
+        .alarma__lista li.aviso img { width: 100%; height: auto; max-height: 50vh; }
+        .alarma__lista small { color: #5A6B80; }
+        .alarma__btns { display: flex; gap: 8px; }
+        .alarma__btns .btn { flex: 1; justify-content: center; }
+        .sonido-aviso {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; border: 0; padding: 12px 16px;
+            background: #FF8F00; color: #fff; font: 600 1rem 'Outfit', sans-serif; cursor: pointer;
+        }
+        .sonido-aviso.activo { background: #2E7D32; cursor: default; }
+        @keyframes alarma-entra { from { transform: translate(-50%, -30px); opacity: 0; } }
+        @keyframes campana { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-18deg); } 40% { transform: rotate(14deg); } 60% { transform: rotate(-8deg); } }
     </style>
 </head>
 <body>
+    <button class="sonido-aviso" id="sonidoAviso"><i class="fas fa-volume-high"></i> Toca aquí para activar el sonido de las órdenes nuevas</button>
     <section class="selector" id="selector">
         <div class="selector__cab">
             <span class="marca__logo"><img src="logo.png" alt=""></span>
@@ -161,6 +196,16 @@
     </section>
 
     <button class="subir-arriba" id="subirArriba" aria-label="Volver arriba"><i class="fas fa-arrow-up"></i></button>
+
+    <!-- Alarma: órdenes nuevas y avisos del jefe -->
+    <div class="alarma oculto" id="alarma" role="alertdialog" aria-labelledby="alarmaTitulo">
+        <div class="alarma__cab"><i class="fas fa-bell"></i><b id="alarmaTitulo">¡Llegó una orden nueva!</b></div>
+        <ul class="alarma__lista" id="alarmaLista"></ul>
+        <div class="alarma__btns">
+            <button class="btn btn--exito" id="alarmaVisto"><i class="fas fa-check"></i> Visto</button>
+            <button class="btn btn--borde" id="alarmaVer"><i class="fas fa-eye"></i> Ver la orden</button>
+        </div>
+    </div>
 
     <script>
         const sesion = REG.exigirSesion('cualquiera');
@@ -447,6 +492,119 @@
         }));
         $('buscar').addEventListener('input', pintarLista);
 
+
+        // ---------- Alarma: órdenes nuevas y avisos del jefe ----------
+        // Cada 10 segundos se revisan las órdenes y los avisos; lo que esta tablet no había visto suena y sale arriba.
+        // Los navegadores no dejan que una página suene hasta que alguien la toque, por eso el botón naranja.
+        let audio = null;
+        let sonando = null;
+        const leerSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch (e) { return new Set(); } };
+        const conocidas = leerSet('ordenesConocidas');
+        const avisosVistos = leerSet('avisosVistos');
+        let primeraVez = !localStorage.getItem('ordenesConocidas');
+        const pendientes = []; // { tipo: 'orden' | 'aviso', dato }
+
+        function activarSonido() {
+            try {
+                if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+                audio.resume();
+            } catch (e) {}
+            // Queda como aviso fijo (sin desaparecer) para que la pantalla no salte mientras alguien toca
+            const b = $('sonidoAviso');
+            b.classList.add('activo');
+            b.innerHTML = '<i class="fas fa-bell"></i> Sonido activado: esta tablet va a sonar cuando llegue una orden nueva';
+        }
+        document.addEventListener('pointerdown', activarSonido, { once: true });
+        $('sonidoAviso').addEventListener('click', () => { activarSonido(); setTimeout(timbre, 100); });
+
+        // Tres notas de campanita, como un timbre
+        function timbre() {
+            if (!audio || audio.state !== 'running') return;
+            const t = audio.currentTime;
+            [[880, 0], [1175, 0.18], [1568, 0.36]].forEach(([f, d]) => {
+                const o = audio.createOscillator(); const g = audio.createGain();
+                o.type = 'sine'; o.frequency.value = f;
+                g.gain.setValueAtTime(0.0001, t + d);
+                g.gain.exponentialRampToValueAtTime(0.6, t + d + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.7);
+                o.connect(g); g.connect(audio.destination);
+                o.start(t + d); o.stop(t + d + 0.75);
+            });
+        }
+
+        function guardarVistos() {
+            localStorage.setItem('ordenesConocidas', JSON.stringify([...conocidas].slice(-500)));
+            localStorage.setItem('avisosVistos', JSON.stringify([...avisosVistos].slice(-200)));
+        }
+
+        function vigilar(lista, avisos) {
+            const nuevas = [];
+            if (!primeraVez) {
+                // Solo las órdenes que pasan por el área de esta tablet (o todas, si está en la pantalla de áreas)
+                lista.filter((o) => !conocidas.has(String(o.numeroOrden)))
+                    .filter((o) => !area || !o.requerimientos || o.requerimientos[area])
+                    .forEach((o) => nuevas.push({ tipo: 'orden', dato: o }));
+            }
+            lista.forEach((o) => conocidas.add(String(o.numeroOrden)));
+            const yaEnPantalla = (a) => pendientes.some((p) => p.tipo === 'aviso' && p.dato.id === a.id);
+            // Un aviso con áreas elegidas solo suena en esas áreas; sin áreas, en todas
+            const paraEsta = (a) => !a.areas || !a.areas.length || !area || a.areas.includes(area);
+            if (primeraVez) avisos.forEach((a) => avisosVistos.add(String(a.id)));
+            else avisos.filter((a) => paraEsta(a) && !avisosVistos.has(String(a.id)) && !yaEnPantalla(a)).reverse().forEach((a) => nuevas.push({ tipo: 'aviso', dato: a }));
+            primeraVez = false;
+            guardarVistos();
+            if (nuevas.length) avisar(nuevas);
+        }
+
+        function itemAlarma(p) {
+            if (p.tipo === 'aviso') {
+                const a = p.dato;
+                const hora = new Date(a.creado).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+                const sobre = a.numero_orden ? `, sobre la orden ${esc(a.numero_orden)}` : '';
+                return `<li class="aviso"><small><i class="fas fa-bullhorn"></i> Aviso del jefe, ${esc(hora)}${sobre}</small>${a.texto ? `<p>${esc(a.texto)}</p>` : ''}${a.imagen ? `<img src="${esc(a.imagen)}" alt="Imagen del aviso" data-ver-imagen="${esc(a.imagen)}" data-titulo="Aviso">` : ''}</li>`;
+            }
+            const o = p.dato;
+            const img = o.imagenDiseno ? `<img src="${esc(o.imagenDiseno)}" alt="Diseño" data-ver-imagen="${esc(o.imagenDiseno)}" data-titulo="Orden ${esc(o.numeroOrden)}">` : '';
+            return `<li class="${img ? '' : 'sin-foto'}">${img}<span><b>Orden ${esc(o.numeroOrden)}</b>, ${esc(o.cliente || '')}<br>${esc(o.tipoPrenda || '')}, ${totalOrden(o)} prendas<br><small>Entrega ${esc(fechaCorta(o.fechaEntrega))}</small></span></li>`;
+        }
+
+        function avisar(nuevas) {
+            nuevas.forEach((p) => {
+                const igual = (x) => x.tipo === p.tipo && (p.tipo === 'orden' ? x.dato.numeroOrden === p.dato.numeroOrden : x.dato.id === p.dato.id);
+                if (!pendientes.some(igual)) pendientes.push(p);
+            });
+            const nOrdenes = pendientes.filter((p) => p.tipo === 'orden').length;
+            const nAvisos = pendientes.length - nOrdenes;
+            $('alarmaTitulo').textContent = !nOrdenes ? (nAvisos === 1 ? 'Aviso del jefe' : `${nAvisos} avisos del jefe`)
+                : nOrdenes === 1 && !nAvisos ? '¡Llegó una orden nueva!'
+                : `¡Llegaron ${nOrdenes} ${nOrdenes === 1 ? 'orden nueva' : 'órdenes nuevas'}${nAvisos ? ` y ${nAvisos} ${nAvisos === 1 ? 'aviso' : 'avisos'}` : ''}!`;
+            $('alarmaLista').innerHTML = pendientes.map(itemAlarma).join('');
+            $('alarmaVer').classList.toggle('oculto', !nOrdenes && !pendientes.some((p) => p.tipo === 'aviso' && p.dato.numero_orden));
+            $('alarma').classList.remove('oculto');
+            if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+            // Suena cada 4 segundos durante un minuto, o hasta que alguien toque "Visto"
+            clearInterval(sonando);
+            let veces = 0;
+            timbre();
+            sonando = setInterval(() => { if (++veces >= 15) clearInterval(sonando); else timbre(); }, 4000);
+        }
+
+        function cerrarAlarma() {
+            clearInterval(sonando);
+            pendientes.forEach((p) => { if (p.tipo === 'aviso') avisosVistos.add(String(p.dato.id)); });
+            guardarVistos();
+            pendientes.length = 0;
+            $('alarma').classList.add('oculto');
+        }
+        $('alarmaVisto').addEventListener('click', cerrarAlarma);
+        $('alarmaVer').addEventListener('click', () => {
+            const p = pendientes.find((x) => x.tipo === 'orden');
+            const av = pendientes.find((x) => x.tipo === 'aviso' && x.dato.numero_orden);
+            const numero = p ? p.dato.numeroOrden : av ? av.dato.numero_orden : null;
+            cerrarAlarma();
+            if (numero) location.href = `ver-orden.html?orden=${encodeURIComponent(numero)}&origen=tablet${area ? '&area=' + encodeURIComponent(area) : ''}`;
+        });
+
         // ---------- Datos ----------
         function estadoConexion(ok) {
             $('areaEstado').innerHTML = ok
@@ -463,6 +621,7 @@
                 return;
             }
             estadoConexion(true);
+            vigilar(nuevas, await window.DB.obtenerAvisos());
             const cambio = JSON.stringify(nuevas) !== JSON.stringify(ordenes);
             ordenes = nuevas;
             guardarLocal();

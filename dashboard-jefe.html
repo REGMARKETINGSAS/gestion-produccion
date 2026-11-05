@@ -255,6 +255,7 @@
             subtitulo: 'Todas las órdenes activas y en qué área va cada una.',
             activo: 'dashboard',
             acciones: `
+                <button class="btn btn--claro" id="btnAviso"><i class="fas fa-bullhorn"></i> Aviso a las tablets</button>
                 <button class="btn btn--claro" id="btnHistorial"><i class="fas fa-clock-rotate-left"></i> Historial</button>
                 <button class="btn btn--rosa" id="btnPaquete"><i class="fas fa-layer-group"></i> Nuevo paquete</button>
                 <a class="btn btn--blanco" href="crear-orden.html"><i class="fas fa-plus"></i> Nueva orden</a>`,
@@ -570,6 +571,84 @@
             else REG.aviso(`${id} en el historial`, 'ok');
             await cargar();
             pintar();
+        }
+
+        // ---------- Aviso a las tablets ----------
+        // Un mensaje (y si quiere una foto) que suena y aparece en todas las tablets de las áreas.
+        $('btnAviso').addEventListener('click', abrirAviso);
+        function abrirAviso() {
+            const fondo = document.createElement('div');
+            fondo.className = 'modal-fondo';
+            fondo.innerHTML = `<form class="modal" style="max-width:560px" novalidate>
+                <div class="modal__cab"><h2><i class="fas fa-bullhorn" style="color:var(--azul-700)"></i> Aviso a las tablets</h2>
+                    <button type="button" class="btn btn--suave btn--icono" data-cerrar aria-label="Cerrar"><i class="fas fa-xmark"></i></button></div>
+                <div class="modal__cuerpo">
+                    <div class="campo"><label for="avOrden">¿Es sobre una orden?</label>
+                        <select id="avOrden"><option value="">No, es un aviso general</option>${ordenes.slice().sort((a, b) => String(a.numeroOrden).localeCompare(String(b.numeroOrden), 'es', { numeric: true })).map((o) => `<option value="${esc(o.numeroOrden)}">Orden ${esc(o.numeroOrden)}, ${esc(o.cliente || '')}</option>`).join('')}</select>
+                        <small class="muted" id="avOrdenAyuda" style="display:block;margin-top:4px">Si escoges una orden, se marcan solas las áreas que todavía la tienen pendiente.</small></div>
+                    <p class="seccion-titulo">¿A qué áreas?</p>
+                    <div id="avAreas" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+                        <label class="chip chip--azul" style="cursor:pointer;padding:8px 12px"><input type="checkbox" id="avTodas" checked> Todas</label>
+                        ${ORDEN_AREAS.map((a) => `<label class="chip" style="cursor:pointer;padding:8px 12px;background:#F1F4F9"><input type="checkbox" data-av-area="${a}"> ${esc(AREAS[a].nombre)}</label>`).join('')}
+                    </div>
+                    <div class="campo"><label for="avTexto">Mensaje <span class="obl">*</span></label>
+                        <textarea id="avTexto" rows="4" maxlength="500" placeholder="Ej: La orden 120 va con cuello azul, no negro" style="width:100%;padding:12px;border:1.5px solid var(--borde, #D7DFEA);border-radius:12px;resize:vertical"></textarea></div>
+                    <p class="seccion-titulo">Imagen (opcional)</p>
+                    <label class="btn btn--borde btn--bloque" style="cursor:pointer"><i class="fas fa-image"></i> <span id="avImgTexto">Agregar una foto o imagen</span><input type="file" accept="image/*" id="avImg" hidden></label>
+                    <img id="avVista" alt="" style="display:none;margin-top:10px;max-width:100%;max-height:240px;border-radius:12px;object-fit:contain">
+                </div>
+                <div class="modal__pie">
+                    <button type="button" class="btn btn--suave" data-cerrar>Cancelar</button>
+                    <button type="submit" class="btn btn--exito" id="avEnviar"><i class="fas fa-paper-plane"></i> Enviar a las tablets</button>
+                </div>
+            </form>`;
+            document.body.appendChild(fondo);
+            const cerrar = () => fondo.remove();
+            fondo.addEventListener('click', (e) => { if (e.target === fondo || e.target.closest('[data-cerrar]')) cerrar(); });
+            let imagen = null;
+            let subiendo = false;
+            // "Todas" y las áreas sueltas se excluyen entre sí
+            const casillas = [...fondo.querySelectorAll('[data-av-area]')];
+            const todas = fondo.querySelector('#avTodas');
+            todas.addEventListener('change', () => { if (todas.checked) casillas.forEach((c) => (c.checked = false)); else if (!casillas.some((c) => c.checked)) todas.checked = true; });
+            casillas.forEach((c) => c.addEventListener('change', () => { todas.checked = !casillas.some((x) => x.checked); }));
+            fondo.querySelector('#avOrden').addEventListener('change', (e) => {
+                const o = ordenes.find((x) => String(x.numeroOrden) === e.target.value);
+                if (!o) { casillas.forEach((c) => (c.checked = false)); todas.checked = true; return; }
+                const faltan = areasDe(o).filter((a) => estadoArea(o, a) !== 'completado');
+                casillas.forEach((c) => (c.checked = faltan.includes(c.dataset.avArea)));
+                todas.checked = !faltan.length;
+                const t = fondo.querySelector('#avTexto');
+                if (!t.value.trim()) t.value = `Orden ${o.numeroOrden} (${o.cliente || ''}): `;
+                t.focus();
+            });
+            fondo.querySelector('#avImg').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                subiendo = true;
+                fondo.querySelector('#avImgTexto').textContent = 'Subiendo imagen…';
+                const r = await REG.prepararImagen(file, 'avisos', 1600);
+                subiendo = false;
+                if (!r) { fondo.querySelector('#avImgTexto').textContent = 'Agregar una foto o imagen'; return REG.aviso('No se pudo leer esa imagen.', 'error'); }
+                imagen = r.url;
+                fondo.querySelector('#avImgTexto').textContent = 'Cambiar la imagen';
+                const vista = fondo.querySelector('#avVista'); vista.src = r.url; vista.style.display = 'block';
+            });
+            fondo.querySelector('form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const texto = fondo.querySelector('#avTexto').value.trim();
+                if (!texto && !imagen) return REG.aviso('Escribe un mensaje o agrega una imagen.', 'alerta');
+                if (subiendo) return REG.aviso('Espera a que termine de subir la imagen.', 'alerta');
+                const boton = fondo.querySelector('#avEnviar');
+                boton.disabled = true;
+                const areasElegidas = todas.checked ? [] : casillas.filter((c) => c.checked).map((c) => c.dataset.avArea);
+                const r = await window.DB.crearAviso(texto, imagen, areasElegidas, fondo.querySelector('#avOrden').value);
+                boton.disabled = false;
+                if (!r.success) return REG.aviso('No se pudo enviar el aviso. Revisa la conexión e intenta otra vez.', 'error', 5000);
+                REG.aviso(areasElegidas.length ? `Aviso enviado a ${areasElegidas.map((a) => AREAS[a].nombre).join(', ')}.` : 'Aviso enviado a todas las áreas.', 'ok', 4000);
+                cerrar();
+            });
+            setTimeout(() => fondo.querySelector('#avTexto').focus(), 50);
         }
 
         // ---------- Historial ----------

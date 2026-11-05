@@ -34,7 +34,7 @@
         dama:           grupo('dama', 'Dama', '#AD1457', conPrefijo('DA', ['XS', 'S', 'M', 'L', 'XL', '2XL'])),
         pantalonMujer:  grupo('pantalonMujer', 'Pantalón mujer', '#C2185B', conPrefijo('PM', ['4', '6', '8', '10', '12', '14', '16', '18', '20', '22'])),
         pantalonHombre: grupo('pantalonHombre', 'Pantalón hombre', '#1565C0', conPrefijo('PH', ['26', '28', '30', '32', '34', '36', '38', '40', '42', '44'])),
-        pantalonetas:   grupo('pantalonetas', 'Pantalonetas', '#E65100', conPrefijo('PT', ['S', 'M', 'L', 'XL'])),
+        pantalonetas:   grupo('pantalonetas', 'Pantalonetas', '#E65100', conPrefijo('PT', ['S', 'M', 'L', 'XL', '2XL'])),
         pijamas:        grupo('pijamas', 'Pijamas', '#6A1B9A', conPrefijo('PJ', ['S', 'M', 'L', 'XL'])),
         sudaderas:      grupo('sudaderas', 'Sudaderas / Joggers', '#455A64', conPrefijo('SD', ['S', 'M', 'L', 'XL'])),
         chaquetas:      grupo('chaquetas', 'Chaquetas', '#5D4037', conPrefijo('CH', ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'])),

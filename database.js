@@ -450,6 +450,7 @@ function convertirOrdenParaBD(orden) {
         talla_pantaloneta_m: (orden.tallas && orden.tallas['PT-M']) || 0,
         talla_pantaloneta_l: (orden.tallas && orden.tallas['PT-L']) || 0,
         talla_pantaloneta_xl: (orden.tallas && orden.tallas['PT-XL']) || 0,
+        talla_pantaloneta_2xl: (orden.tallas && orden.tallas['PT-2XL']) || 0,
 
         // Tallas de Pantalones Pijama
         talla_pijama_s: (orden.tallas && orden.tallas['PJ-S']) || 0,
@@ -597,6 +598,7 @@ function convertirOrdenDesdeBD(ordenBD) {
             'PT-M': ordenBD.talla_pantaloneta_m || 0,
             'PT-L': ordenBD.talla_pantaloneta_l || 0,
             'PT-XL': ordenBD.talla_pantaloneta_xl || 0,
+            'PT-2XL': ordenBD.talla_pantaloneta_2xl || 0,
 
             // Pijamas
             'PJ-S': ordenBD.talla_pijama_s || 0,
@@ -879,6 +881,32 @@ async function eliminarImagen(url) {
         console.error('Error al eliminar imagen:', error);
     }
 }
+// ---------- Avisos del jefe para las tablets ----------
+// Tabla "avisos" (se crea con ACTUALIZACION-NOVIEMBRE.sql). Si todavía no existe, las tablets siguen funcionando sin avisos.
+// areas: lista de áreas que lo reciben (vacía = todas). numeroOrden: la orden de la que habla, si es de una.
+async function crearAviso(texto, imagen, areas, numeroOrden) {
+    try {
+        const { error } = await supabaseClient.from('avisos').insert([{ texto: texto || '', imagen: imagen || null, areas: areas && areas.length ? areas : null, numero_orden: numeroOrden || null }]);
+        if (error) throw error;
+        return { success: true };
+    } catch (error) {
+        console.error('Error al enviar el aviso:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// Los avisos de las últimas 24 horas, el más nuevo primero
+async function obtenerAvisos() {
+    try {
+        const { data, error } = await supabaseClient.from('avisos').select('*').order('creado', { ascending: false }).limit(20);
+        if (error) throw error;
+        const desde = Date.now() - 24 * 60 * 60 * 1000;
+        return (data || []).filter((a) => new Date(a.creado).getTime() >= desde);
+    } catch (error) {
+        return [];
+    }
+}
+
 // Para usar en otros archivos:
 window.DB = {
     // Órdenes
@@ -905,7 +933,11 @@ window.DB = {
     obtenerSiguienteNumeroOrden,
     verificarLogin,
     subirImagen,
-    eliminarImagen
+    eliminarImagen,
+
+    // Avisos para las tablets
+    crearAviso,
+    obtenerAvisos
 
 };
 
